@@ -1,0 +1,24 @@
+FROM php:5.6-fpm-jessie
+
+RUN apt-get -y update && apt-get -y install git
+
+# add dev user
+RUN groupadd -r dev && useradd -r -g dev dev
+RUN chown dev:dev /home/dev
+WORKDIR /home/dev
+
+# set up ssh environment
+# RUN mkdir .ssh
+# COPY ssh/config /home/dev/.ssh/
+# RUN chown -R dev:dev .ssh
+
+COPY container_setup.sh /home/dev/.bashrc
+RUN chown dev:dev .bashrc
+
+# RUN mkdir .ssh ; chown -R dev:dev .ssh/
+# RUN touch .gitconfig ; chown -R dev:dev .gitconfig
+RUN mkdir .mnt ; chown -R dev:dev .mnt/
+VOLUME [ "/home/dev/.mnt" ]
+
+USER dev
+

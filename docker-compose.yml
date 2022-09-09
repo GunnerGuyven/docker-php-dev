@@ -1,0 +1,25 @@
+version: '3'
+services:
+  php:
+    build: 
+      context: .
+      dockerfile: dockerfile.php-dev
+    image: php-dev:0.1.0
+    expose:
+      - 9000
+    volumes:
+      - php-dev-context:/home/dev/.mnt
+    environment:
+      DEFAULT_GIT_USER: User Name
+      DEFAULT_GIT_EMAIL: uname@org.com
+  
+  nginx:
+    image: nginx:alpine
+    ports:
+      - 5000:5000
+    volumes:
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+      # - ./www:/usr/share/nginx/html
+
+  
+  
