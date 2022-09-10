@@ -4,8 +4,8 @@ RUN apt-get -y update && apt-get -y install git
 
 # add dev user
 RUN groupadd -r dev && useradd -r -g dev dev
-RUN chown dev:dev /home/dev
 WORKDIR /home/dev
+RUN chown dev:dev /home/dev
 
 # set up ssh environment
 # RUN mkdir .ssh
