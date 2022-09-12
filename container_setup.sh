@@ -1,4 +1,12 @@
-if [ ! -f ~/.mnt/.noprompt ]; then
+#!/bin/bash
+
+# set -e #stop on error
+# set -x #echo all lines to console
+
+# context_mount=~/.mnt
+context_mount=/mnt
+
+if [ ! -f $context_mount/.noprompt ]; then
   echo "This container's context appears to be uninitialized."
   # echo "This is likely because you have not mounted a state volume to"
   # echo "'$HOME/.mnt'.  If you have, and this is your first use of this image"
@@ -12,55 +20,59 @@ if [ ! -f ~/.mnt/.noprompt ]; then
     exit 1
   fi
   echo
-  touch ~/.mnt/.noprompt
+  touch $context_mount/.noprompt
 fi
 
 if [ ! -f ~/.gitconfig ]; then
-  touch .mnt/gitconfig
-  ln -s .mnt/gitconfig .gitconfig
-  echo
-  echo "Configuring git:"
-  if [[ -n $DEFAULT_GIT_USER ]]; then
-    echo "   name: $DEFAULT_GIT_USER"
-    prompt="$DEFAULT_GIT_USER"
+  if [ ! -f $context_mount/gitconfig ]; then
+    touch $context_mount/gitconfig
+    ln -s $context_mount/gitconfig ~/.gitconfig
+    echo
+    echo "Configuring git:"
+    if [[ -n $DEFAULT_GIT_USER ]]; then
+      echo "   name: $DEFAULT_GIT_USER"
+      prompt="$DEFAULT_GIT_USER"
+    else
+      read -p "   name: " prompt
+    fi
+    if [[ -n "$prompt" ]]; then
+      git config --global --add user.name "$prompt"
+    fi
+    if [[ -n $DEFAULT_GIT_EMAIL ]]; then
+      echo "  email: $DEFAULT_GIT_EMAIL"
+      prompt=$DEFAULT_GIT_EMAIL
+    else
+      read -p "  email: " prompt
+    fi
+    if [[ -n "$prompt" ]]; then
+      git config --global --add user.email "$prompt"
+    fi
   else
-    read -p "   name: " prompt
-  fi
-  if [[ -n "$prompt" ]]; then
-    git config --global --add user.name "$prompt"
-  fi
-  if [[ -n $DEFAULT_GIT_EMAIL ]]; then
-    echo "  email: $DEFAULT_GIT_EMAIL"
-    prompt=$DEFAULT_GIT_EMAIL
-  else
-    read -p "  email: " prompt
-  fi
-  if [[ -n "$prompt" ]]; then
-    git config --global --add user.email "$prompt"
+    ln -s $context_mount/gitconfig ~/.gitconfig
   fi
 fi
 
 if [ ! -d ~/.ssh ]; then
-  if [ ! -d ~/.mnt/ssh ]; then
-    mkdir ~/.mnt/ssh
-    ln -s .mnt/ssh ~/.ssh
+  if [ ! -d $context_mount/ssh ]; then
+    mkdir $context_mount/ssh
   fi
+  ln -s $context_mount/ssh ~/.ssh
 fi
 
 if [ ! -f ~/.ssh/config ]; then
 echo
 echo "Configuring ssh:"
 
-cat > $HOME/.ssh/config << EOL
+cat > ~/.ssh/config << EOL
 Host bitbucket.org
 IdentityFile ~/.ssh/id_bitbucket_org_docker_php
 EOL
-ssh-keygen -N '' -f /home/dev/.ssh/id_bitbucket_org_docker_php
+ssh-keygen -N '' -f ~/.ssh/id_bitbucket_org_docker_php
 
 echo
 echo "Remember to register this public key with bitbucket:"
 echo
-cat .ssh/id_bitbucket_org_docker_php.pub
+cat ~/.ssh/id_bitbucket_org_docker_php.pub
 echo
 
 fi
