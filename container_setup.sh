@@ -4,7 +4,26 @@
 # set -x #echo all lines to console
 
 # context_mount=~/.mnt
-context_mount=/mnt
+context_mount=/mnt/context
+
+: ${SSH_KEY_BITBUCKET:=id_docker_php_bitbucket}
+: ${SSH_KEY_TERM:=id_docker_php_ssh_term}
+
+prompt_quit() {
+  show = ${1:-"Proceed? [yN]"}
+  read -n1 -p $show prompt
+  if [[ ! ($prompt == 'y' || $prompt == 'Y') ]]; then
+    echo "Aborting..."
+    echo
+    exit 1
+  fi
+}
+
+if [ ! -d $context_mount ]; then
+  echo "This container requires a context mount for proper operation"
+  echo "Please mount a volume to: $context_mount"
+  prompt_quit
+fi
 
 if [ ! -f $context_mount/.noprompt ]; then
   echo "This container's context appears to be uninitialized."
@@ -17,12 +36,13 @@ if [ ! -f $context_mount/.noprompt ]; then
   read -n1 -p "Perform initialization? [yN]" prompt
   if [[ ! ($prompt == 'y' || $prompt == 'Y') ]]; then
     echo "Aborting..."
+    echo
     exit 1
   fi
-  echo
   touch $context_mount/.noprompt
 fi
 
+# add gitconfig values
 if [ ! -f ~/.gitconfig ]; then
   if [ ! -f $context_mount/gitconfig ]; then
     touch $context_mount/gitconfig
@@ -52,6 +72,7 @@ if [ ! -f ~/.gitconfig ]; then
   fi
 fi
 
+# create git ssh key
 if [ ! -d ~/.ssh ]; then
   if [ ! -d $context_mount/ssh ]; then
     mkdir $context_mount/ssh
@@ -65,14 +86,32 @@ echo "Configuring ssh:"
 
 cat > ~/.ssh/config << EOL
 Host bitbucket.org
-IdentityFile ~/.ssh/id_bitbucket_org_docker_php
+IdentityFile ~/.ssh/$SSH_KEY_BITBUCKET
 EOL
-ssh-keygen -N '' -f ~/.ssh/id_bitbucket_org_docker_php
+
+if [ ! -f ~/.ssh/$SSH_KEY_BITBUCKET ]; then
+  echo "Creating ssh key for git+bitbucket: "
+  ssh-keygen -q -N '' -f ~/.ssh/$SSH_KEY_BITBUCKET
+  echo "Key named: $SSH_KEY_BITBUCKET"
+fi
 
 echo
 echo "Remember to register this public key with bitbucket:"
 echo
-cat ~/.ssh/id_bitbucket_org_docker_php.pub
-echo
+cat ~/.ssh/$SSH_KEY_BITBUCKET.pub
 
 fi
+
+# create ssh keys for terminal access
+if [ ! -f ~/.ssh/$SSH_KEY_TERM ]; then
+  ssh-keygen -q -N '' -f ~/.ssh/$SSH_KEY_TERM
+  cat ~/.ssh/$SSH_KEY_TERM.pub >> ~/.ssh/authorized_keys
+
+  echo
+  echo "Remember to register this private key on your client machine"
+  echo "if you wish to connect to this container using ssh:"
+  echo "~/.ssh/$SSH_KEY_TERM"
+  
+fi
+
+echo

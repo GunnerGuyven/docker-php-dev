@@ -1,9 +1,25 @@
-FROM php:5.6-fpm-jessie
+FROM php:5.4-fpm
+# PHP 5.4.45 (cli) (built: Dec  5 2015 08:38:59) 
+# Copyright (c) 1997-2014 The PHP Group
+# Zend Engine v2.4.0, Copyright (c) 1998-2014 Zend Technologies
+# Debian 8 (jessie)
 
-RUN apt-get -y update && apt-get -y install git
+# FROM php:5.6-fpm-jessie
 
-COPY container_setup.sh /root/
-RUN echo "/root/container_setup.sh" | tee -a /root/.bashrc
+RUN curl -LJO https://github.com/PowerShell/PowerShell/releases/download/v7.2.6/powershell-lts_7.2.6-1.deb_amd64.deb
+
+RUN apt-get -y update \
+ && apt-get -y install \
+ git \
+ libicu52 \
+ openssh-server
+
+RUN dpkg -i powershell-lts_7.2.6-1.deb_amd64.deb
+RUN rm powershell-lts_7.2.6-1.deb_amd64.deb
+
+# COPY container_setup.sh /root/
+# RUN echo "/root/container_setup.sh" | tee -a /root/.bashrc
+
 WORKDIR /work
-
-VOLUME [ "/mnt" ]
+# VOLUME [ "/mnt" ]
+# ENTRYPOINT [ "pwsh" ]
