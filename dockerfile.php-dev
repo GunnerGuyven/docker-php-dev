@@ -8,14 +8,25 @@ FROM php:5.4-fpm
 
 RUN curl -LJO https://github.com/PowerShell/PowerShell/releases/download/v7.2.6/powershell-lts_7.2.6-1.deb_amd64.deb
 
-RUN apt-get -y update \
- && apt-get -y install \
- git \
- libicu52 \
- openssh-server
+RUN apt-get -y update && apt-get -y install \
+  git \
+  libicu52 \
+  openssh-server
 
 RUN dpkg -i powershell-lts_7.2.6-1.deb_amd64.deb
 RUN rm powershell-lts_7.2.6-1.deb_amd64.deb
+
+#set shell things
+RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
+RUN install -Dv /dev/null ~/.config/powershell/Microsoft.PowerShell_profile.ps1
+RUN echo 'function l { Invoke-Expression "ls --color=auto $args" }' | tee -a ~/.config/powershell/Microsoft.PowerShell_profile.ps1
+RUN echo "Invoke-Expression (&starship init powershell)" | tee -a ~/.config/powershell/Microsoft.PowerShell_profile.ps1
+RUN cat ~/.bashrc \
+  | sed 's|# alias|alias|' \
+  #  | sed 's|# eval "`dircolors`"|eval "`dircolors -b`"|' \
+  | sed 's|# export|export|' \  
+  > temp && mv temp ~/.bashrc
+RUN echo 'eval "$(starship init bash)"' | tee -a ~/.bashrc
 
 # COPY container_setup.sh /root/
 # RUN echo "/root/container_setup.sh" | tee -a /root/.bashrc

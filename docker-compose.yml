@@ -4,14 +4,14 @@ services:
     build:
       context: .
       dockerfile: dockerfile.php-dev
-    image: php-dev:0.3.0-pre
+    image: php-dev:0.3.1
     ports:
       - "2222:22" # wth: apparently yaml thinks this is a date?
     expose:
       - 9000
     volumes:
-      # - ./context:/mnt/context
-      - ./container_setup.sh:/root/container_setup.sh
+      - ./context:/mnt/context
+      # - ./container_setup.sh:/root/container_setup.sh
       - ./container_setup.ps1:/root/container_setup.ps1
     environment:
       DEFAULT_GIT_USER: User Name
