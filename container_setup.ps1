@@ -16,20 +16,32 @@ if ( -not (Test-Path $context_mount)) {
   # prompt_quit "Proceed Anyway?"
 }
 
+function prompt_or_default {
+  param(
+    [string] $Prompt,
+    [string] $Default
+  )
+  if ($Default) {
+    Write-Host -NoNewline "${Prompt}: "
+    Write-Host $Default -ForegroundColor DarkGray
+    return $Default
+  }
+  return Read-Host $Prompt
+}
+
 if ( -not (Test-Path ~/.gitconfig)) {
-  Write-Host -NoNewline "Didn't find .gitconfig in profile..."
+  Write-Host -NoNewline "Setting up Git defaults..."
   if ( Test-Path $context_mount/gitconfig ) {
-    Write-Host " existing linked from context"
+    Write-Host " linked from context" -ForegroundColor DarkGreen
     ln -s $context_mount/gitconfig ~/.gitconfig
   }
   else {
-    Write-Host "creating from scratch"
+    Write-Host " creating" -ForegroundColor DarkYellow
     touch $context_mount/gitconfig
     ln -s $context_mount/gitconfig ~/.gitconfig
-
+    $uname = prompt_or_default "   name" $env:DEFAULT_GIT_USER
+    $email = prompt_or_default "  email" $env:DEFAULT_GIT_EMAIL
+    git config --global user.name $uname
+    git config --global user.email $email
   }
 }
-
-# prompt_quit
-
-Write-Output "end of script"
