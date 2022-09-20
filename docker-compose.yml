@@ -11,6 +11,7 @@ services:
       - 9000
     volumes:
       - ./context:/mnt/context
+      # - ./term_keys:/mnt/term_keys
       # - ./container_setup.sh:/root/container_setup.sh
       - ./container_setup.ps1:/root/container_setup.ps1
     environment:

@@ -24,7 +24,7 @@ RUN echo "Invoke-Expression (&starship init powershell)" | tee -a ~/.config/powe
 RUN cat ~/.bashrc \
   | sed 's|# alias|alias|' \
   #  | sed 's|# eval "`dircolors`"|eval "`dircolors -b`"|' \
-  | sed 's|# export|export|' \  
+  | sed 's|# export|export|' \
   > temp && mv temp ~/.bashrc
 RUN echo 'eval "$(starship init bash)"' | tee -a ~/.bashrc
 
