@@ -20,7 +20,6 @@ enum Step {
   SSHConfig
   SSHConfigGitKey
   PubTermKey
-  SSHTermKey
   SSHAuth
 }
 $_stepPromptValues = @(
@@ -29,7 +28,6 @@ $_stepPromptValues = @(
   "Missing SSH config"
   "Generating Git Key"
   "Publishing Terminal Key"
-  "  Creating Terminal Key"
   "  Creating Client Auth"
 )
 $_stepPromptValuesMaxLen = ($_stepPromptValues | Measure-Object -Maximum -Property Length).Maximum
@@ -66,7 +64,6 @@ function prompt_or_default {
 
 function status_created { Write-Host "created" -ForegroundColor Yellow }
 function status_creating { Write-Host "creating" -ForegroundColor Yellow }
-function status_recreated { Write-Host "recreated" -ForegroundColor Blue }
 function status_linked { Write-Host "linked from context" -ForegroundColor DarkGreen }
 function status_copied { Write-Host "copied from context" -ForegroundColor DarkGreen }
 
@@ -134,8 +131,6 @@ IdentityFile ~/.ssh/$ssh_key_bitbucket
 if ((Test-Path $pub_ssh_term_keys)) {
   [Step]::PubTermKey | announce_step
   if ( -not (Test-Path ~/.ssh/$ssh_key_term) -or $ssh_key_term_regenerate) {
-    status_creating
-    [Step]::SSHTermKey | announce_step
     if ($ssh_key_term_regenerate) {
       Remove-Item @(
         "~/.ssh/authorized_keys"
@@ -144,7 +139,7 @@ if ((Test-Path $pub_ssh_term_keys)) {
       )
     }
     ssh-keygen -q -N '""' -f ~/.ssh/$ssh_key_term
-    if ($ssh_key_term_regenerate) { status_recreated }
+    if ($ssh_key_term_regenerate) { status_created }
     else { status_created }
     [Step]::SSHAuth | announce_step
     Get-Content "~/.ssh/$ssh_key_term.pub" | Out-File "~/.ssh/authorized_keys"
@@ -159,7 +154,14 @@ if ((Test-Path $pub_ssh_term_keys)) {
     Write-Host "SSH_KEY_TERM_REGENERATE" -ForegroundColor DarkMagenta
   }
   Copy-Item ~/.ssh/$ssh_key_term $pub_ssh_term_keys
-  
+  Write-Host "  Info: " -NoNewline -ForegroundColor Blue
+  Write-Host         "key: " -NoNewline
+  Write-Host $ssh_key_term -ForegroundColor DarkMagenta
+  Write-Host "        placed in: " -NoNewline
+  Write-Host $pub_ssh_term_keys -ForegroundColor DarkMagenta
+  Write-Host "        This is the private half of the key you should"
+  Write-Host "        use on your end in order to make an ssh"
+  Write-Host "        connection to this running container."
 }
 # else {
 #   Write-Host "  Info: " -NoNewline -ForegroundColor Blue

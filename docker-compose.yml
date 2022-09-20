@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: dockerfile.php-dev
-    image: php-dev:0.3.1
+    image: php-dev:0.3.2
     ports:
       - "2222:22" # wth: apparently yaml thinks this is a date?
     expose:
