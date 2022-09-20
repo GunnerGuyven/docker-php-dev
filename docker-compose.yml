@@ -11,7 +11,7 @@ services:
       - 9000
     volumes:
       - ./context:/mnt/context
-      # - ./term_keys:/mnt/term_keys
+      - ./term_keys:/mnt/term_keys
       # - ./container_setup.sh:/root/container_setup.sh
       - ./container_setup.ps1:/root/container_setup.ps1
     environment:
@@ -19,6 +19,7 @@ services:
       DEFAULT_GIT_EMAIL: uname@org.com
       # SSH_KEY_BITBUCKET: id_docker_php_bitbucket
       # SSH_KEY_TERM: id_docker_php_ssh_term
+      # SSH_KEY_TERM_REGENERATE: 1
 
   # nginx:
   #   image: nginx:alpine

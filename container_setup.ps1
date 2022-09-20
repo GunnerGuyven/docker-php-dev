@@ -6,11 +6,10 @@
 $context_mount = "/mnt/context"
 $ctx_gitconfig = "$context_mount/gitconfig"
 $ctx_ssh = "$context_mount/ssh"
-$ctx_ssh_term_keys = "$context_mount/term"
 $pub_ssh_term_keys = "/mnt/term_keys"
-$ssh_term_keys_regenerate = Test-Path $pub_ssh_term_keys/regen
 $ssh_key_bitbucket = $env:SSH_KEY_BITBUCKET ?? "id_docker_php_bitbucket"
 $ssh_key_term = $env:SSH_KEY_TERM ?? "id_docker_php_ssh_term"
+$ssh_key_term_regenerate = $env:SSH_KEY_TERM_REGENERATE
 #endregion
 
 #region prompt function helpers
@@ -20,23 +19,25 @@ enum Step {
   SSH
   SSHConfig
   SSHConfigGitKey
-  SSHTermKey
   PubTermKey
+  SSHTermKey
+  SSHAuth
 }
 $_stepPromptValues = @(
   "Setting up Git defaults"
   "Adding SSH context"
   "Missing SSH config"
   "Generating Git Key"
-  "Generating Terminal Key"
   "Publishing Terminal Key"
+  "  Creating Terminal Key"
+  "  Creating Client Auth"
 )
 $_stepPromptValuesMaxLen = ($_stepPromptValues | Measure-Object -Maximum -Property Length).Maximum
 function announce_step {
   param (
-    [Parameter(ValueFromPipeline = $true)][Step] $prompt
+    [Parameter(ValueFromPipeline = $true)][Step] $Step
   )
-  $val = $_stepPromptValues[$prompt]
+  $val = $_stepPromptValues[$Step]
   $dots = '.' * ($_stepPromptValuesMaxLen - $val.Length + 3)
   Write-Host -NoNewline $val -ForegroundColor White
   Write-Host -NoNewline " $dots " -ForegroundColor Blue
@@ -67,13 +68,14 @@ function status_created { Write-Host "created" -ForegroundColor Yellow }
 function status_creating { Write-Host "creating" -ForegroundColor Yellow }
 function status_recreated { Write-Host "recreated" -ForegroundColor Blue }
 function status_linked { Write-Host "linked from context" -ForegroundColor DarkGreen }
+function status_copied { Write-Host "copied from context" -ForegroundColor DarkGreen }
 
 #endregion
 
 if ( -not (Test-Path $context_mount)) {
   Write-Host "This container requires a context mount for proper operation"
   Write-Host "Please mount a volume to: " -NoNewline
-  Write-Host $context_mount -ForegroundColor Cyan
+  Write-Host $context_mount -ForegroundColor DarkMagenta
   exit 1
   # prompt_quit "Proceed Anyway?"
 }
@@ -100,7 +102,7 @@ if ( -not (Test-Path ~/.gitconfig)) {
 if ( -not (Test-Path ~/.ssh)) {
   [Step]::SSH | announce_step
   if (-not (Test-Path $ctx_ssh)) {
-    New-Item $ctx_ssh -ItemType Directory
+    New-Item $ctx_ssh -ItemType Directory | Out-Null
     status_created
   }
   else { status_linked }
@@ -129,31 +131,40 @@ IdentityFile ~/.ssh/$ssh_key_bitbucket
   Get-Content "~/.ssh/$ssh_key_bitbucket.pub" | Write-Host -ForegroundColor DarkGray
 }
 
-if ( -not (Test-Path ~/.ssh/$ssh_key_term) -or $ssh_term_keys_regenerate) {
-  [Step]::SSHTermKey | announce_step
-  if ($ssh_term_keys_regenerate) {
-    Remove-Item @(
-      "~/.ssh/authorized_keys"
-      "~/.ssh/$ssh_key_term"
-      "~/.ssh/$ssh_key_term.pub"
-    )
-  }
-  ssh-keygen -q -N '""' -f ~/.ssh/$ssh_key_term
-  if ($ssh_term_keys_regenerate) { status_recreated }
-  else { status_created }
-  $ssh_term_keys_regenerate = $true #signal that we did work here
-}
-
-if ((Test-Path $pub_ssh_term_keys) -or $true) {
+if ((Test-Path $pub_ssh_term_keys)) {
   [Step]::PubTermKey | announce_step
-  if (-not $ssh_term_keys_regenerate) {
-    status_linked
-    Write-Host "  Note: " -NoNewline -ForegroundColor Red
-    Write-Host         "Previous terminal keys exist," # -ForegroundColor DarkGray
-    Write-Host "        to regenerate them place a file" # -ForegroundColor DarkGray
-    Write-Host "        named 'regen' in the root of the" # -ForegroundColor DarkGray
-    Write-Host "        mount: " -NoNewline # -ForegroundColor DarkGray
-    Write-Host $pub_ssh_term_keys -ForegroundColor Cyan
+  if ( -not (Test-Path ~/.ssh/$ssh_key_term) -or $ssh_key_term_regenerate) {
+    status_creating
+    [Step]::SSHTermKey | announce_step
+    if ($ssh_key_term_regenerate) {
+      Remove-Item @(
+        "~/.ssh/authorized_keys"
+        "~/.ssh/$ssh_key_term"
+        "~/.ssh/$ssh_key_term.pub"
+      )
+    }
+    ssh-keygen -q -N '""' -f ~/.ssh/$ssh_key_term
+    if ($ssh_key_term_regenerate) { status_recreated }
+    else { status_created }
+    [Step]::SSHAuth | announce_step
+    Get-Content "~/.ssh/$ssh_key_term.pub" | Out-File "~/.ssh/authorized_keys"
+    status_created
   }
+  else {
+    status_copied
+    Write-Host "  Info: " -NoNewline -ForegroundColor Blue
+    Write-Host         "Terminal key already existed in context."
+    Write-Host "        If you wish to generate it anew set the"
+    Write-Host "        container environment variable: " -NoNewline
+    Write-Host "SSH_KEY_TERM_REGENERATE" -ForegroundColor DarkMagenta
+  }
+  Copy-Item ~/.ssh/$ssh_key_term $pub_ssh_term_keys
   
 }
+# else {
+#   Write-Host "  Info: " -NoNewline -ForegroundColor Blue
+#   Write-Host         "Terminal key is available."
+#   Write-Host "        To obtain it mount an external"
+#   Write-Host "        volume to: " -NoNewline
+#   Write-Host $pub_ssh_term_keys -ForegroundColor DarkMagenta
+# }
