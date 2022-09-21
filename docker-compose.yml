@@ -4,19 +4,20 @@ services:
     build:
       context: .
       dockerfile: dockerfile.php-dev
-    image: php-dev:0.3.2
+    image: php-dev:0.3.3
     ports:
       - "2222:22" # wth: apparently yaml thinks this is a date?
     expose:
       - 9000
     volumes:
       - ./context:/mnt/context
-      - ./term_keys:/mnt/term_keys
+      # - ./term_keys:/mnt/term_keys
       # - ./container_setup.sh:/root/container_setup.sh
       - ./container_setup.ps1:/root/container_setup.ps1
     environment:
       DEFAULT_GIT_USER: User Name
       DEFAULT_GIT_EMAIL: uname@org.com
+      USER_ROOT_PWORD: test123
       # SSH_KEY_BITBUCKET: id_docker_php_bitbucket
       # SSH_KEY_TERM: id_docker_php_ssh_term
       # SSH_KEY_TERM_REGENERATE: 1

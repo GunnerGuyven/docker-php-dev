@@ -6,6 +6,10 @@
 $context_mount = "/mnt/context"
 $ctx_gitconfig = "$context_mount/gitconfig"
 $ctx_ssh = "$context_mount/ssh"
+$ctx_config = "$context_mount/config"
+$ctx_vscode = "$context_mount/vscode"
+$ctx_bashrc = "$context_mount/bashrc"
+$ctx_pwsh_profile = "$ctx_config/powershell/Microsoft.PowerShell_profile.ps1"
 $pub_ssh_term_keys = "/mnt/term_keys"
 $ssh_key_bitbucket = $env:SSH_KEY_BITBUCKET ?? "id_docker_php_bitbucket"
 $ssh_key_term = $env:SSH_KEY_TERM ?? "id_docker_php_ssh_term"
@@ -21,6 +25,11 @@ enum Step {
   SSHConfigGitKey
   PubTermKey
   SSHAuth
+  VSCode
+  ProfileConfig
+  RootSSHStrategy
+  AddBashRC
+  AddPWSHProfile
 }
 $_stepPromptValues = @(
   "Setting up Git defaults"
@@ -29,6 +38,11 @@ $_stepPromptValues = @(
   "Generating Git Key"
   "Publishing Terminal Key"
   "  Creating Client Auth"
+  "Adding VSCode context"
+  "Adding Profile Config"
+  "Root SSH access via"
+  "Shell Config Bash"
+  "Shell Config Powershell"
 )
 $_stepPromptValuesMaxLen = ($_stepPromptValues | Measure-Object -Maximum -Property Length).Maximum
 function announce_step {
@@ -67,6 +81,23 @@ function status_creating { Write-Host "creating" -ForegroundColor Yellow }
 function status_linked { Write-Host "linked from context" -ForegroundColor DarkGreen }
 function status_copied { Write-Host "copied from context" -ForegroundColor DarkGreen }
 
+function create_or_context_dir {
+  param(
+    [string] $Target_Path,
+    [string] $Context_Path,
+    [Parameter(ValueFromPipeline = $true)][Step] $Step_to_announce
+  )
+  if ( -not (Test-Path $Target_Path)) {
+    announce_step $step_to_announce
+    if ( -not (Test-Path $Context_Path)) {
+      New-Item $Context_Path -ItemType Directory | Out-Null
+      status_created
+    }
+    else { status_linked }
+    ln -s $Context_Path $Target_Path
+  }
+}
+
 #endregion
 
 if ( -not (Test-Path $context_mount)) {
@@ -95,16 +126,9 @@ if ( -not (Test-Path ~/.gitconfig)) {
   }
 }
 
-# create linked ssh context for persistance
-if ( -not (Test-Path ~/.ssh)) {
-  [Step]::SSH | announce_step
-  if (-not (Test-Path $ctx_ssh)) {
-    New-Item $ctx_ssh -ItemType Directory | Out-Null
-    status_created
-  }
-  else { status_linked }
-  ln -s $ctx_ssh ~/.ssh
-}
+[Step]::SSH | create_or_context_dir ~/.ssh $ctx_ssh
+[Step]::VSCode | create_or_context_dir ~/.vscode-server $ctx_vscode
+[Step]::ProfileConfig | create_or_context_dir ~/.config $ctx_config
 
 # create minimal ssh config if missing
 if ( -not (Test-Path ~/.ssh/config )) {
@@ -128,6 +152,7 @@ IdentityFile ~/.ssh/$ssh_key_bitbucket
   Get-Content "~/.ssh/$ssh_key_bitbucket.pub" | Write-Host -ForegroundColor DarkGray
 }
 
+# produce ssh keys for making terminal connection to container
 if ((Test-Path $pub_ssh_term_keys)) {
   [Step]::PubTermKey | announce_step
   if ( -not (Test-Path ~/.ssh/$ssh_key_term) -or $ssh_key_term_regenerate) {
@@ -153,7 +178,7 @@ if ((Test-Path $pub_ssh_term_keys)) {
     Write-Host "        container environment variable: " -NoNewline
     Write-Host "SSH_KEY_TERM_REGENERATE" -ForegroundColor DarkMagenta
   }
-  Copy-Item ~/.ssh/$ssh_key_term $pub_ssh_term_keys
+  Copy-Item ~/.ssh/$ssh_key_term, ~/.ssh/$ssh_key_term.pub $pub_ssh_term_keys
   Write-Host "  Info: " -NoNewline -ForegroundColor Blue
   Write-Host         "key: " -NoNewline
   Write-Host $ssh_key_term -ForegroundColor DarkMagenta
@@ -170,3 +195,59 @@ if ((Test-Path $pub_ssh_term_keys)) {
 #   Write-Host "        volume to: " -NoNewline
 #   Write-Host $pub_ssh_term_keys -ForegroundColor DarkMagenta
 # }
+
+# groupadd -r dev && useradd -r -g dev dev
+# mkdir /home/dev
+# chown -R dev:dev /home/dev
+# Invoke-Expression "bash -c 'echo -e `"$u\\n$u`" | passwd dev &> null'"
+
+[Step]::RootSSHStrategy | announce_step
+if ($env:USER_ROOT_PWORD) {
+  $u = $env:USER_ROOT_PWORD
+  sed -i 's|PermitRootLogin without-password|PermitRootLogin yes|' /etc/ssh/sshd_config
+  Invoke-Expression "bash -c 'echo -e `"$u\\n$u`" | passwd &> /dev/null'"
+  Write-Host "password" -ForegroundColor Red
+}
+else { Write-Host "key only" -ForegroundColor Green }
+
+#region Shell Defaults
+if ( -not (Test-Path $ctx_pwsh_profile)) {
+  [Step]::AddPWSHProfile | announce_step
+  New-Item /mnt/context/config/powershell -ItemType Directory | Out-Null
+  @'
+function l { Invoke-Expression "ls --color=auto -lA $args" }
+Invoke-Expression (&starship init powershell)
+'@ | Out-File $ctx_pwsh_profile
+  status_created
+}
+if (-not (Test-Path $ctx_bashrc)) {
+  [Step]::AddBashRC | announce_step
+  @'
+# ~/.bashrc: executed by bash(1) for non-login shells.
+
+# Note: PS1 and umask are already set in /etc/profile. You should not
+# need this unless you want different defaults for root.
+# PS1='${debian_chroot:+($debian_chroot)}\h:\w\$ '
+# umask 022
+
+# You may uncomment the following lines if you want `ls' to be colorized:
+export LS_OPTIONS='--color=auto'
+# eval "`dircolors`"
+alias ls='ls $LS_OPTIONS'
+alias ll='ls $LS_OPTIONS -l'
+alias l='ls $LS_OPTIONS -lA'
+#
+# Some more alias to avoid making mistakes:
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+
+eval "$(starship init bash)"
+'@ -split "`r`n" -join "`n" | Out-File $ctx_bashrc
+  status_created
+}
+Remove-Item -Force ~/.bashrc
+ln -s $ctx_bashrc ~/.bashrc
+#endregion
+
+php-fpm

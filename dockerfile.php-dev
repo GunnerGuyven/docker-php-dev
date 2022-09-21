@@ -16,13 +16,17 @@ RUN apt-get -y update && apt-get -y install \
 RUN dpkg -i powershell-lts_7.2.6-1.deb_amd64.deb
 RUN rm powershell-lts_7.2.6-1.deb_amd64.deb
 
-#set shell things
 RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
 
+# # add dev user
+# RUN groupadd -r dev && useradd -r -g dev dev
+# WORKDIR /home/dev
+# RUN chown -R dev:dev /home/dev
+
 WORKDIR /root
-COPY php_docker_profile.ps1 .config/powershell/Microsoft.PowerShell_profile.ps1
-COPY php_docker_bashrc.sh ./.bashrc
 COPY container_setup.ps1 ./
+
+ENTRYPOINT [ "pwsh", "-f", "container_setup.ps1" ]
 
 # WORKDIR /work
 # VOLUME [ "/mnt" ]
