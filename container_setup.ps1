@@ -9,6 +9,7 @@ $ctx_ssh = "$context_mount/ssh"
 $ctx_config = "$context_mount/config"
 $ctx_vscode = "$context_mount/vscode"
 $ctx_bashrc = "$context_mount/bashrc"
+$ctx_starship_cfg = "$ctx_config/starship.toml"
 $ctx_pwsh_profile = "$ctx_config/powershell/Microsoft.PowerShell_profile.ps1"
 $pub_ssh_term_keys = "/mnt/term_keys"
 $ssh_key_bitbucket = $env:SSH_KEY_BITBUCKET ?? "id_docker_php_bitbucket"
@@ -30,6 +31,7 @@ enum Step {
   RootSSHStrategy
   AddBashRC
   AddPWSHProfile
+  AddStarshipCfg
 }
 $_stepPromptValues = @(
   "Setting up Git defaults"
@@ -43,6 +45,7 @@ $_stepPromptValues = @(
   "Root SSH access via"
   "Shell Config Bash"
   "Shell Config Powershell"
+  "Shell Config Starship"
 )
 $_stepPromptValuesMaxLen = ($_stepPromptValues | Measure-Object -Maximum -Property Length).Maximum
 function announce_step {
@@ -220,6 +223,17 @@ Invoke-Expression (&starship init powershell)
 '@ | Out-File $ctx_pwsh_profile
   status_created
 }
+if ( -not (Test-Path $ctx_starship_cfg)){
+  [Step]::AddStarshipCfg | announce_step
+  @'
+[shell]
+disabled = false
+bash_indicator = ""
+powershell_indicator = ""
+style = "cyan bold"
+'@ | Out-File $ctx_starship_cfg
+  status_created
+}
 if (-not (Test-Path $ctx_bashrc)) {
   [Step]::AddBashRC | announce_step
   @'
@@ -249,5 +263,3 @@ eval "$(starship init bash)"
 Remove-Item -Force ~/.bashrc
 ln -s $ctx_bashrc ~/.bashrc
 #endregion
-
-php-fpm
