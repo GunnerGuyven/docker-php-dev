@@ -20,14 +20,15 @@ RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
 
 # # add dev user
 # RUN groupadd -r dev && useradd -r -g dev dev
-# WORKDIR /home/dev
+# RUN mkdir /home/dev
 # RUN chown -R dev:dev /home/dev
 
 COPY container_setup.ps1 /root/container_setup.ps1
 
 WORKDIR /work
 
-ENTRYPOINT [ "pwsh", "-c", "/root/container_setup.ps1 && php-fpm"]
+ENTRYPOINT [ "pwsh", "-f", "/root/container_setup.ps1" , "-Startup" ]
+# ENTRYPOINT [ "pwsh", "-c", "/root/container_setup.ps1 && php-fpm"]
 
 # VOLUME [ "/mnt" ]
 # ENTRYPOINT [ "pwsh" ]

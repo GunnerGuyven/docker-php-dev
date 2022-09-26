@@ -1,4 +1,4 @@
-
+param( [switch] $Startup ) 
 
 # Set-PSDebug -Trace 1
 
@@ -29,6 +29,7 @@ enum Step {
   VSCode
   ProfileConfig
   RootSSHStrategy
+  AddDevUser
   AddBashRC
   AddPWSHProfile
   AddStarshipCfg
@@ -43,6 +44,7 @@ $_stepPromptValues = @(
   "Adding VSCode context"
   "Adding Profile Config"
   "Root SSH access via"
+  "Adding user 'dev'"
   "Shell Config Bash"
   "Shell Config Powershell"
   "Shell Config Starship"
@@ -199,10 +201,15 @@ if ((Test-Path $pub_ssh_term_keys)) {
 #   Write-Host $pub_ssh_term_keys -ForegroundColor DarkMagenta
 # }
 
-# groupadd -r dev && useradd -r -g dev dev
-# mkdir /home/dev
-# chown -R dev:dev /home/dev
-# Invoke-Expression "bash -c 'echo -e `"$u\\n$u`" | passwd dev &> null'"
+if ($env:USER_DEV_PWORD) {
+  [Step]::AddDevUser | announce_step
+  groupadd -r dev && useradd -r -g dev dev
+  mkdir /home/dev
+  chown -R dev:dev /home/dev
+  $u = $env:USER_DEV_PWORD
+  Invoke-Expression "bash -c 'echo -e `"$u\\n$u`" | passwd dev &> null'"
+  status_created
+}
 
 [Step]::RootSSHStrategy | announce_step
 if ($env:USER_ROOT_PWORD) {
@@ -211,7 +218,11 @@ if ($env:USER_ROOT_PWORD) {
   Invoke-Expression "bash -c 'echo -e `"$u\\n$u`" | passwd &> /dev/null'"
   Write-Host "password" -ForegroundColor Red
 }
-else { Write-Host "key only" -ForegroundColor Green }
+else {
+  sed -i 's|#PasswordAuthentication yes|PasswordAuthentication no|' /etc/ssh/sshd_config
+  sed -i 's|UsePAM yes|UsePAM no|' /etc/ssh/sshd_config
+  Write-Host "key only" -ForegroundColor Green 
+}
 
 #region Shell Defaults
 if ( -not (Test-Path $ctx_pwsh_profile)) {
@@ -223,7 +234,7 @@ Invoke-Expression (&starship init powershell)
 '@ | Out-File $ctx_pwsh_profile
   status_created
 }
-if ( -not (Test-Path $ctx_starship_cfg)){
+if ( -not (Test-Path $ctx_starship_cfg)) {
   [Step]::AddStarshipCfg | announce_step
   @'
 [shell]
@@ -263,3 +274,9 @@ eval "$(starship init bash)"
 Remove-Item -Force ~/.bashrc
 ln -s $ctx_bashrc ~/.bashrc
 #endregion
+
+if ($Startup) {
+  Invoke-Expression "service ssh start"
+  php-fpm
+}
+
