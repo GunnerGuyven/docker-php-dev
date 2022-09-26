@@ -12,6 +12,8 @@ $ctx_bashrc = "$context_mount/bashrc"
 $ctx_starship_cfg = "$ctx_config/starship.toml"
 $ctx_pwsh_profile = "$ctx_config/powershell/Microsoft.PowerShell_profile.ps1"
 $pub_ssh_term_keys = "/mnt/term_keys"
+$php_ini_defaults_path = "/usr/src/php"
+$pub_php_ini_defaults = "/mnt/php_ini"
 $ssh_key_bitbucket = $env:SSH_KEY_BITBUCKET ?? "id_docker_php_bitbucket"
 $ssh_key_term = $env:SSH_KEY_TERM ?? "id_docker_php_ssh_term"
 $ssh_key_term_regenerate = $env:SSH_KEY_TERM_REGENERATE
@@ -33,6 +35,7 @@ enum Step {
   AddBashRC
   AddPWSHProfile
   AddStarshipCfg
+  DumpPHPINI
 }
 $_stepPromptValues = @(
   "Setting up Git defaults"
@@ -48,6 +51,7 @@ $_stepPromptValues = @(
   "Shell Config Bash"
   "Shell Config Powershell"
   "Shell Config Starship"
+  "Retrieving PHP defaults"
 )
 $_stepPromptValuesMaxLen = ($_stepPromptValues | Measure-Object -Maximum -Property Length).Maximum
 function announce_step {
@@ -271,9 +275,15 @@ eval "$(starship init bash)"
 '@ -split "`r`n" -join "`n" | Out-File $ctx_bashrc
   status_created
 }
-Remove-Item -Force ~/.bashrc
+if (Test-Path ~/.bashrc) { Remove-Item -Force ~/.bashrc }
 ln -s $ctx_bashrc ~/.bashrc
 #endregion
+
+if (Test-Path $pub_php_ini_defaults) {
+  [Step]::DumpPHPINI | announce_step
+  Copy-Item $php_ini_defaults_path/php.ini-* $pub_php_ini_defaults/
+  status_copied
+}
 
 if ($Startup) {
   Invoke-Expression "service ssh start"
