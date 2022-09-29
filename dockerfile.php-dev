@@ -18,6 +18,8 @@ RUN rm powershell-lts_7.2.6-1.deb_amd64.deb
 
 RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
 
+# TODO add https://micro-editor.github.io/ as a util
+
 # # add dev user
 # RUN groupadd -r dev && useradd -r -g dev dev
 # RUN mkdir /home/dev

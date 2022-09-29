@@ -4,15 +4,16 @@ services:
     build:
       context: .
       dockerfile: dockerfile.php-dev
-    image: php-dev:0.3.4
+    image: php-dev:0.3.5
     ports:
       - "2222:22" # wth: apparently yaml thinks this is a date?
     expose:
       - 9000
     volumes:
-      - ./context:/mnt/context
+      - php-dev-context:/mnt/context
+      # - ./context:/mnt/context
       # - ./term_keys:/mnt/term_keys
-      - ./container_setup.ps1:/root/container_setup.ps1
+      # - ./container_setup.ps1:/root/container_setup.ps1
       # - ./php_ini:/mnt/php_ini
       # - ./php54.ini:/usr/local/etc/php/php.ini
     environment:
@@ -37,5 +38,5 @@ services:
       # - ./www:/usr/share/nginx/html
       - ./nginx-default.conf:/etc/nginx/conf.d/default.conf
 
-# volumes:
-#   php-dev-context:
+volumes:
+  php-dev-context:
