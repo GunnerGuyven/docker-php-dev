@@ -15,11 +15,13 @@ services:
       # - ./term_keys:/mnt/term_keys
       # - ./container_setup.ps1:/root/container_setup.ps1
       # - ./php_ini:/mnt/php_ini
-      # - ./php54.ini:/usr/local/etc/php/php.ini
+      - ./php54.ini:/usr/local/etc/php/php.ini
+      # - ./www:/var/www/html
+      # - ./lib:/var/www/lib
     environment:
       DEFAULT_GIT_USER: User Name
       DEFAULT_GIT_EMAIL: uname@org.com
-      USER_ROOT_PWORD: test123
+      # USER_ROOT_PWORD: test123
       # USER_DEV_PWORD: test123
       # SSH_KEY_BITBUCKET: id_docker_php_bitbucket
       # SSH_KEY_TERM: id_docker_php_ssh_term
@@ -36,6 +38,7 @@ services:
       - 5000:80
     volumes:
       # - ./www:/usr/share/nginx/html
+      # - ./js:/usr/share/nginx/html/global
       - ./nginx-default.conf:/etc/nginx/conf.d/default.conf
 
 volumes:
