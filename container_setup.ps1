@@ -12,7 +12,8 @@ $ctx_bashrc = "$context_mount/bashrc"
 $ctx_starship_cfg = "$ctx_config/starship.toml"
 $ctx_pwsh_profile = "$ctx_config/powershell/Microsoft.PowerShell_profile.ps1"
 $pub_ssh_term_keys = "/mnt/term_keys"
-$php_ini_defaults_path = "/usr/src/php"
+$php_ini_defaults_path = "/usr/src/php"         # php 5.4
+$php_ini_defaults_path2 = "/usr/local/etc/php"  # php 7.4
 $pub_php_ini_defaults = "/mnt/php_ini"
 $ssh_key_bitbucket = $env:SSH_KEY_BITBUCKET ?? "id_docker_php_bitbucket"
 $ssh_key_term = $env:SSH_KEY_TERM ?? "id_docker_php_ssh_term"
@@ -281,7 +282,12 @@ ln -s $ctx_bashrc ~/.bashrc
 
 if (Test-Path $pub_php_ini_defaults) {
   [Step]::DumpPHPINI | announce_step
-  Copy-Item $php_ini_defaults_path/php.ini-* $pub_php_ini_defaults/
+  if (Test-Path $php_ini_defaults_path) {
+    Copy-Item $php_ini_defaults_path/php.ini-* $pub_php_ini_defaults/
+  }
+  else {
+    Copy-Item $php_ini_defaults_path2/php.ini-* $pub_php_ini_defaults/
+  }
   status_copied
 }
 

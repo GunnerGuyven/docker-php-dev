@@ -1,21 +1,53 @@
 version: '3'
 services:
-  php:
+  php54:
     build:
       context: .
-      dockerfile: dockerfile.php-dev
-    image: php-dev:0.3.5
+      dockerfile: dockerfile.php-dev-54
+    image: php-dev:0.4.0-54
     ports:
-      - "2222:22" # wth: apparently yaml thinks this is a date?
+      - "2223:22"
     expose:
       - 9000
     volumes:
       - php-dev-context:/mnt/context
       # - ./context:/mnt/context
       # - ./term_keys:/mnt/term_keys
-      # - ./container_setup.ps1:/root/container_setup.ps1
       # - ./php_ini:/mnt/php_ini
-      - ./php54.ini:/usr/local/etc/php/php.ini
+      # - ./container_setup.ps1:/root/container_setup.ps1
+      # - ./php54.ini:/usr/local/etc/php/php.ini
+      # - ./www:/var/www/html
+      # - ./lib:/var/www/lib
+    environment:
+      DEFAULT_GIT_USER: User Name
+      DEFAULT_GIT_EMAIL: uname@org.com
+      # USER_ROOT_PWORD: test123
+      # USER_DEV_PWORD: test123
+      # SSH_KEY_BITBUCKET: id_docker_php_bitbucket
+      # SSH_KEY_TERM: id_docker_php_ssh_term
+      # SSH_KEY_TERM_REGENERATE: 1
+    # entrypoint:
+    #   - pwsh
+    #   - -f
+    #   - /root/container_setup.ps1
+    #   - "-Startup"
+
+  php74:
+    build:
+      context: .
+      dockerfile: dockerfile.php-dev-74
+    image: php-dev:0.4.0-74
+    ports:
+      - "2222:22"
+    expose:
+      - 9000
+    volumes:
+      - php-dev-context:/mnt/context
+      # - ./context:/mnt/context
+      # - ./term_keys:/mnt/term_keys
+      # - ./php_ini:/mnt/php_ini
+      # - ./container_setup.ps1:/root/container_setup.ps1
+      # - ./php74.ini:/usr/local/etc/php/php.ini
       # - ./www:/var/www/html
       # - ./lib:/var/www/lib
     environment:

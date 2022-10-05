@@ -1,0 +1,29 @@
+FROM php:7.4-fpm
+# PHP 7.4.32 (cli) (built: Sep 29 2022 14:29:49) ( NTS )
+# Zend Engine v3.4.0, Copyright (c) Zend Technologies
+# Debian 11 (bullseye)
+
+RUN apt-get -y update && apt-get -y install \
+  git \
+  openssh-server
+
+RUN curl -LJO https://github.com/PowerShell/PowerShell/releases/download/v7.2.6/powershell-lts_7.2.6-1.deb_amd64.deb
+RUN dpkg -i powershell-lts_7.2.6-1.deb_amd64.deb
+RUN rm powershell-lts_7.2.6-1.deb_amd64.deb
+
+RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
+RUN curl https://getmic.ro | bash
+RUN mv micro /usr/bin
+
+# RUN pear install html_quickform
+
+# # add dev user
+# RUN groupadd -r dev && useradd -r -g dev dev
+# RUN mkdir /home/dev
+# RUN chown -R dev:dev /home/dev
+
+COPY container_setup.ps1 /root/container_setup.ps1
+
+WORKDIR /work
+
+ENTRYPOINT [ "pwsh", "-f", "/root/container_setup.ps1" , "-Startup" ]
