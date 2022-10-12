@@ -18,19 +18,8 @@ services:
       # - ./php54.ini:/usr/local/etc/php/php.ini
       # - ./www:/var/www/html
       # - ./lib:/var/www/lib
-    environment:
-      DEFAULT_GIT_USER: User Name
-      DEFAULT_GIT_EMAIL: uname@org.com
-      # USER_ROOT_PWORD: test123
-      # USER_DEV_PWORD: test123
-      # SSH_KEY_BITBUCKET: id_docker_php_bitbucket
-      # SSH_KEY_TERM: id_docker_php_ssh_term
-      # SSH_KEY_TERM_REGENERATE: 1
-    # entrypoint:
-    #   - pwsh
-    #   - -f
-    #   - /root/container_setup.ps1
-    #   - "-Startup"
+    env_file: php_env
+
 
   php74:
     build:
@@ -50,19 +39,7 @@ services:
       # - ./php74.ini:/usr/local/etc/php/php.ini
       # - ./www:/var/www/html
       # - ./lib:/var/www/lib
-    environment:
-      DEFAULT_GIT_USER: User Name
-      DEFAULT_GIT_EMAIL: uname@org.com
-      # USER_ROOT_PWORD: test123
-      # USER_DEV_PWORD: test123
-      # SSH_KEY_BITBUCKET: id_docker_php_bitbucket
-      # SSH_KEY_TERM: id_docker_php_ssh_term
-      # SSH_KEY_TERM_REGENERATE: 1
-    # entrypoint:
-    #   - pwsh
-    #   - -f
-    #   - /root/container_setup.ps1
-    #   - "-Startup"
+    env_file: php_env
 
   nginx54:
     image: nginx:alpine
