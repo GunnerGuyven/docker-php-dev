@@ -1,0 +1,5 @@
+FROM mariadb:10-focal
+
+RUN apt-get -y update && apt-get -y install pv curl
+RUN curl https://getmic.ro | bash
+RUN mv micro /usr/bin

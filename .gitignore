@@ -2,3 +2,4 @@ context
 term_keys
 php_ini
 *.sql
+*.sql.gz
