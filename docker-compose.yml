@@ -67,9 +67,9 @@ services:
     # image: mariadb
     volumes:
       - mydb:/var/lib/mysql
-      # - ./create_mysql.sh:/docker-entrypoint-initdb.d/create_mysql.sh
-      - ./my.cnf:/etc/mysql/my.cnf
-      - ./mydb.sql.gz:/mydb.sql.gz
+      # - ./create_mysql.sh:/create_mysql.sh
+      # - ./my.cnf:/etc/mysql/my.cnf
+      # - ./mydb.sql.gz:/mydb.sql.gz
     environment:
       MARIADB_ROOT_PASSWORD: poi098
       MARIADB_DATABASE: mydb
