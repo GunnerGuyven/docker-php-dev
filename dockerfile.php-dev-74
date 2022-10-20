@@ -15,6 +15,7 @@ RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
 RUN curl https://getmic.ro | bash
 RUN mv micro /usr/bin
 
+RUN docker-php-ext-install pdo_mysql
 # RUN pear install html_quickform
 
 # # add dev user

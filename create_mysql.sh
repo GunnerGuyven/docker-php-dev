@@ -45,7 +45,7 @@ fi
 
 if [[ -n $created || -n $force ]]; then
   echo "Importing data..."
-  pv /$db.sql.gz | gunzip | mysql -uroot --password="$rpass" $db
+  pv $db.sql.gz | gunzip | mysql -uroot --password="$rpass" $db
 else
   echo "Database '$db' already exists."
   # echo "Use argument 'force' to ignore this and import anyway."
