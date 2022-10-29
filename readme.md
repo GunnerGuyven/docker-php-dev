@@ -46,8 +46,7 @@ Naturally, edit this script to your needs.
 
 ## TODO
 
-- Create a mechanism to specify one or several directories that can be made writable by the PHP process.
+- [x] Create a mechanism to specify one or several directories that can be made writable by the PHP process.
     - Expectation is to use an ENV variable that is a list of paths delimited by semi-colon
     - This can be useful for template generators like Smarty that need a directory to do their work in.
     - The alternative is to require the user to create a directory on a mount and give it wide permissions (+777) to accomplish this, but that is a tedium and insists on the external management of this dir (it may be desired that the directory is ephemerial and internally managed, for instance).
-

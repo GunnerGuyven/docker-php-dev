@@ -1,4 +1,4 @@
-param( [switch] $Startup ) 
+param( [switch] $Startup )
 
 # Set-PSDebug -Trace 1
 
@@ -18,6 +18,7 @@ $pub_php_ini_defaults = "/mnt/php_ini"
 $ssh_key_bitbucket = $env:SSH_KEY_BITBUCKET ?? "id_docker_php_bitbucket"
 $ssh_key_term = $env:SSH_KEY_TERM ?? "id_docker_php_ssh_term"
 $ssh_key_term_regenerate = $env:SSH_KEY_TERM_REGENERATE
+$php_workspaces = $env:PHP_WORK_DIRS
 #endregion
 
 #region prompt function helpers
@@ -37,6 +38,7 @@ enum Step {
   AddPWSHProfile
   AddStarshipCfg
   DumpPHPINI
+  CreatePHPWorkspaces
 }
 $_stepPromptValues = @(
   "Setting up Git defaults"
@@ -53,6 +55,7 @@ $_stepPromptValues = @(
   "Shell Config Powershell"
   "Shell Config Starship"
   "Retrieving PHP defaults"
+  "PHP workspaces"
 )
 $_stepPromptValuesMaxLen = ($_stepPromptValues | Measure-Object -Maximum -Property Length).Maximum
 function announce_step {
@@ -226,7 +229,7 @@ if ($env:USER_ROOT_PWORD) {
 else {
   sed -i 's|#PasswordAuthentication yes|PasswordAuthentication no|' /etc/ssh/sshd_config
   sed -i 's|UsePAM yes|UsePAM no|' /etc/ssh/sshd_config
-  Write-Host "key only" -ForegroundColor Green 
+  Write-Host "key only" -ForegroundColor Green
 }
 
 #region Shell Defaults
@@ -289,6 +292,23 @@ if (Test-Path $pub_php_ini_defaults) {
     Copy-Item $php_ini_defaults_path2/php.ini-* $pub_php_ini_defaults/
   }
   status_copied
+}
+
+#create php workspaces
+if ($php_workspaces) {
+  [Step]::CreatePHPWorkspaces | announce_step
+  status_creating
+  $php_workspaces -split ';' | ForEach-Object {
+    if (Test-Path $_) {
+      Write-Host '  _ ' -ForegroundColor Green -NoNewline
+    }
+    else {
+      New-Item $_ -ItemType Directory | Out-Null
+      Write-Host '  + ' -ForegroundColor DarkBlue -NoNewline
+    }
+    chown -R www-data:www-data $_
+    Write-Host $_
+  }
 }
 
 if ($Startup) {
