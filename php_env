@@ -5,6 +5,6 @@ DEFAULT_GIT_EMAIL=uname@org.com
 # SSH_KEY_BITBUCKET=id_docker_php_bitbucket
 # SSH_KEY_TERM=id_docker_php_ssh_term
 # SSH_KEY_TERM_REGENERATE=1
-PHP_WORK_DIRS='/web/org/smarty/template_c;/web/org/smarty/cache'
+PHP_WORK_DIRS=/web/org/smarty/template_c;/web/org/smarty/cache
 
 
