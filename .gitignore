@@ -3,3 +3,4 @@ term_keys
 php_ini
 *.sql
 *.sql.gz
+temp

@@ -4,7 +4,9 @@ services:
     build:
       context: .
       dockerfile: dockerfile.php-dev-54
-    image: php-dev:0.4.3-54
+    image: php-dev:0.5.3-54
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "2223:22"
     expose:
@@ -20,12 +22,13 @@ services:
       # - ./lib:/var/www/lib
     env_file: php_env
 
-
   php74:
     build:
       context: .
       dockerfile: dockerfile.php-dev-74
-    image: php-dev:0.4.3-74
+    image: php-dev:0.5.3-74
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "2222:22"
     expose:
