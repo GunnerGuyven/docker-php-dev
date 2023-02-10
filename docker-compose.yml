@@ -70,9 +70,9 @@ services:
     # image: mariadb
     volumes:
       - mydb:/var/lib/mysql
-      # - ./create_mysql.sh:/create_mysql.sh
+      # - ./temp/sync_db:/temp/sync_db
+      # - ./sync_db.sh:/sync_db.sh
       # - ./my.cnf:/etc/mysql/my.cnf
-      # - ./mydb.sql.gz:/mydb.sql.gz
     environment:
       MARIADB_ROOT_PASSWORD: poi098
       MARIADB_DATABASE: mydb

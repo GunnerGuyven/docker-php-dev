@@ -6,43 +6,61 @@ This represents an attempt to create a development environment for testing php c
 
 Script added to import. Not taking advantage of the auto-setup scripting feature of these images to be slightly more flexible, and to deal with situations where imports should or shouldn't happen at the user's discretion (and can be very expensive in my case).
 
-To import, uncomment all three lines in this section of `docker-compose.yml`:
+To import, uncomment the extra lines in this section of `docker-compose.yml`:
 
 ```yaml
 volumes:
   - mydb:/var/lib/mysql
-  # - ./create_mysql.sh:/create_mysql.sh
+  # - ./temp/db_import:/db_import_temp
+  # - ./sync_db.sh:/db_import_temp/sync_db.sh
   # - ./my.cnf:/etc/mysql/my.cnf
-  # - ./mydb.sql.gz:/mydb.sql.gz
 ```
-
-The database name is taken from `MARIADB_DATABASE` env variable, and should match the import file `<database name>.sql.gz`
 
 The included `my.cnf` file adds settings that expands memory for the database engine.  This allows very large imports to benefit from significantly better performance.
 
 As stated before, this script does not automatically execute.  To run it use the command:
 
 ```console
-$ docker exec -it docker-php-dev_my_db_1 bash create_mysql.sh
-Database 'mydb' already exists.
-Use argument 'drop' to destroy existing db and import.
+$ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh -h
+A helper for syncing local data from remote
+Usage: sync_db.sh [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [-h|--help] [<dbname>]
+        <dbname>: The name of the database we are importing (default: '')
+        -r, --host: Remote database host (no default)
+        -u, --user: Remote database user (no default)
+        -p, --pass: Remote database password (no default)
+        -g, --go, --no-go: Perform import. Otherwise diagnostic information will be shown. (off by default)
+        -d, --skip-download, --no-skip-download: Skip download step (off by default)
+        -i, --skip-import, --no-skip-import: Skip import step (off by default)
+        -h, --help: Prints help
 ```
 
 Examine your environment for the proper container name in the above command.
 
-<!-- If you use the built-in mechanism provided by the mysql image to create a database for you (and permission the given user to it) you may wish to use the 'force' argument to ignore that the database already exists and perform the import anyway. -->
-
-If you choose to use the 'drop' argument the database will be destroyed and recreated from scratch.
+When you choose to execute you'll see a result such as:
 
 ```console
-$ docker exec -it docker-php-dev_my_db_1 bash create_mysql.sh drop
-Database dropped: mydb
-Database created: mydb
-Importing data...
-90.1MiB 0:02:09 [1.03MiB/s] [==>                 ] 12% ETA 0:15:14
+$ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh -r backup.remote.com central --go
+Retrieving size information for remote database 'central'
++----------+---------+-----------+-----------+
+| Database | #Tables | #Rows (M) | Size (Mb) |
++----------+---------+-----------+-----------+
+| central  |      16 |    0.0187 |    3.3393 |
++----------+---------+-----------+-----------+
+Performing download of 'central'
+1.81MiB 0:00:05 [ 338KiB/s]
+Importing data to local database
+ 240KiB 0:00:00 [ 133MiB/s] [==============================>] 100%
 ```
 
 Naturally, edit this script to your needs.
+
+### Script utility Argbash
+
+A freeware utility called Argbash was used to help generate this script specifically for argument parsing logic.  This was a great time-saver on what is easily one of the most complex elements of bash scripting.  The utility can be found at [https://argbash.dev/] and is engaged by editing the header comments in the script to specification of the API described by the project's documentation and rerunning with this scriptfile as input and output such as:
+
+```console
+argbash sync_db.sh -o sync_db.sh
+```
 
 ## TODO
 
