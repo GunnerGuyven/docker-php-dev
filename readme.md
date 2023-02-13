@@ -54,6 +54,14 @@ Importing data to local database
 
 Naturally, edit this script to your needs.
 
+### Permissions
+
+It may be necessary to grant permission to use the data you import to the user you wish to use.  An example of this is here for reference:
+
+```mysql
+grant all privileges on *.* to 'mydb'@'%';
+```
+
 ### Script utility Argbash
 
 A freeware utility called Argbash was used to help generate this script specifically for argument parsing logic.  This was a great time-saver on what is easily one of the most complex elements of bash scripting.  The utility can be found at [https://argbash.dev/] and is engaged by editing the header comments in the script to specification of the API described by the project's documentation and rerunning with this scriptfile as input and output such as:

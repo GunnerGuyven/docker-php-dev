@@ -185,7 +185,7 @@ assign_positional_args 1 "${_positionals[@]}"
 # [ <-- needed because of Argbash
 
 if [[ $_arg_go == 'on' && -z $_arg_dbname ]]; then
-	echo Must specify a database to import
+	echo 'Must specify a database to import'
 	exit 1
 fi
 
@@ -195,7 +195,7 @@ if [[ $_arg_skip_download == 'off' ]]; then
 		echo "remote database '$_arg_dbname'"
 		schema_filter="AND table_schema = '$_arg_dbname'"
 	else
-		echo all remote databases
+		echo 'all remote databases'
 	fi
 	remote_size="
 	SELECT
@@ -231,7 +231,7 @@ if [[ $_arg_go == 'on' ]]; then
 		mysqldump --lock-tables=false --single-transaction=true --default-character-set=latin1 $marg_h $marg_u --add-drop-database --databases $_arg_dbname | pv -trb | gzip > $temp_file
 	fi
 	if [[ -r $temp_file && $_arg_skip_import == 'off' ]]; then
-		echo Importing data to local database
+		echo 'Importing data to local database'
 		pv $temp_file | gunzip | mysql -uroot --password="$MARIADB_ROOT_PASSWORD"
 	fi
 	if [[ -n $intempdir ]]; then
