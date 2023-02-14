@@ -18,17 +18,17 @@ volumes:
 
 The included `my.cnf` file adds settings that expands memory for the database engine.  This allows very large imports to benefit from significantly better performance.
 
-As stated before, this script does not automatically execute.  To run it use the command:
+To run it use the command:
 
 ```console
 $ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh -h
 A helper for syncing local data from remote
-Usage: sync_db.sh [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [-h|--help] [<dbname>]
-        <dbname>: The name of the database we are importing (default: '')
+Usage: sync_db.sh [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [-h|--help] [<dbname-1>] ... [<dbname-n>] ...
+        <dbname>: The name of the database we are importing
         -r, --host: Remote database host (no default)
         -u, --user: Remote database user (no default)
         -p, --pass: Remote database password (no default)
-        -g, --go, --no-go: Perform import. Otherwise diagnostic information will be shown. (off by default)
+        -g, --go, --no-go: Perform import (off by default)
         -d, --skip-download, --no-skip-download: Skip download step (off by default)
         -i, --skip-import, --no-skip-import: Skip import step (off by default)
         -h, --help: Prints help
@@ -40,7 +40,7 @@ When you choose to execute you'll see a result such as:
 
 ```console
 $ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh -r backup.remote.com central --go
-Retrieving size information for remote database 'central'
+Retrieving size information for remote database(s) 'central'
 +----------+---------+-----------+-----------+
 | Database | #Tables | #Rows (M) | Size (Mb) |
 +----------+---------+-----------+-----------+
