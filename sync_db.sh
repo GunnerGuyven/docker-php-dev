@@ -7,7 +7,8 @@
 # ARG_OPTIONAL_BOOLEAN([go],[g],[Perform import])
 # ARG_OPTIONAL_BOOLEAN([skip-download],[d],[Skip download step])
 # ARG_OPTIONAL_BOOLEAN([skip-import],[i],[Skip import step])
-# ARG_OPTIONAL_BOOLEAN([psql],[],[Use PostgreSQL instead of MySQL])
+# ARG_OPTIONAL_BOOLEAN([psql],[],[Use PostgreSQL mode])
+# ARG_OPTIONAL_BOOLEAN([maria],[],[Use MariaDB mode])
 # ARG_OPTIONAL_BOOLEAN([locale-fix],[],[Replace known Windows locale with Unix (PostgreSQL only)],[on])
 # ARG_OPTIONAL_BOOLEAN([include-roles],[],[Grab all roles from target server (PostgreSQL only)])
 # ARG_POSITIONAL_INF([dbname],[The name of the database we are importing])
@@ -47,6 +48,7 @@ _arg_go="off"
 _arg_skip_download="off"
 _arg_skip_import="off"
 _arg_psql="off"
+_arg_maria="off"
 _arg_locale_fix="on"
 _arg_include_roles="off"
 
@@ -54,7 +56,7 @@ _arg_include_roles="off"
 print_help()
 {
 	printf '%s\n' "A helper for syncing local data from remote"
-	printf 'Usage: %s [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [--(no-)psql] [--(no-)locale-fix] [--(no-)include-roles] [-h|--help] [<dbname-1>] ... [<dbname-n>] ...\n' "$0"
+	printf 'Usage: %s [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [--(no-)psql] [--(no-)maria] [--(no-)locale-fix] [--(no-)include-roles] [-h|--help] [<dbname-1>] ... [<dbname-n>] ...\n' "$0"
 	printf '\t%s\n' "<dbname>: The name of the database we are importing"
 	printf '\t%s\n' "-r, --host: Remote database host (no default)"
 	printf '\t%s\n' "-u, --user: Remote database user (no default)"
@@ -62,7 +64,8 @@ print_help()
 	printf '\t%s\n' "-g, --go, --no-go: Perform import (off by default)"
 	printf '\t%s\n' "-d, --skip-download, --no-skip-download: Skip download step (off by default)"
 	printf '\t%s\n' "-i, --skip-import, --no-skip-import: Skip import step (off by default)"
-	printf '\t%s\n' "--psql, --no-psql: Use PostgreSQL instead of MySQL (off by default)"
+	printf '\t%s\n' "--psql, --no-psql: Use PostgreSQL mode (off by default)"
+	printf '\t%s\n' "--maria, --no-maria: Use MariaDB mode (off by default)"
 	printf '\t%s\n' "--locale-fix, --no-locale-fix: Replace known Windows locale with Unix (PostgreSQL only) (on by default)"
 	printf '\t%s\n' "--include-roles, --no-include-roles: Grab all roles from target server (PostgreSQL only) (off by default)"
 	printf '\t%s\n' "-h, --help: Prints help"
@@ -149,6 +152,10 @@ parse_commandline()
 				_arg_psql="on"
 				test "${1:0:5}" = "--no-" && _arg_psql="off"
 				;;
+			--no-maria|--maria)
+				_arg_maria="on"
+				test "${1:0:5}" = "--no-" && _arg_maria="off"
+				;;
 			--no-locale-fix|--locale-fix)
 				_arg_locale_fix="on"
 				test "${1:0:5}" = "--no-" && _arg_locale_fix="off"
@@ -208,12 +215,26 @@ if [[ $_arg_go == 'on' && -z $_arg_dbname ]]; then
 	exit 1
 fi
 
+if [[ $_arg_psql == 'on' ]]; then
+	DB_MODE="psql"
+elif [[ $_arg_maria == 'on' ]]; then
+	DB_MODE="maria"
+elif [[ -n $PG_VERSION ]]; then
+	DB_MODE="psql"
+elif [[ -n $MARIADB_VERSION ]]; then
+	DB_MODE="maria"
+else
+	echo 'Unable to automatically detect which database mode should be used'
+	echo 'Please use one of --psql or --maria to insist which'
+	exit 1
+fi
+
 rdbs="${_arg_dbname[@]}"
 
 if [[ $_arg_skip_download == 'off' ]]; then
 	echo -n 'Retrieving size information for '
 	if [[ -n $_arg_dbname ]]; then
-		if [[ $_arg_psql == 'on' ]]; then
+		if [[ $DB_MODE == 'psql' ]]; then
 			db_name_field="d.datname"
 		else
 			db_name_field="table_schema"
@@ -228,7 +249,7 @@ if [[ $_arg_skip_download == 'off' ]]; then
 		echo 'all remote databases'
 	fi
 
-	if [[ $_arg_psql == 'on' ]]; then
+	if [[ $DB_MODE == 'psql' ]]; then
 		remote_size="
 		SELECT d.datname as Database,  pg_catalog.pg_get_userbyid(d.datdba) as Owner,
     CASE WHEN pg_catalog.has_database_privilege(d.datname, 'CONNECT')
@@ -275,14 +296,14 @@ if [[ $_arg_go == 'on' ]]; then
 		pushd ./temp/sync_db/ &> /dev/null
 		intempdir=yes
 	fi
-	if [[ $_arg_psql == 'on' ]]; then
-		temp_file="${rdbs// /+}.sql.tar.gz"
+	if [[ $DB_MODE == 'psql' ]]; then
+		temp_file="${rdbs// /+}.tar.gz"
 	else
 		temp_file="${rdbs// /+}.sql.gz"
 	fi
 	if [[ $_arg_skip_download == 'off' ]]; then
 		echo "Performing download of '$rdbs'"
-		if [[ $_arg_psql == 'on' ]]; then
+		if [[ $DB_MODE == 'psql' ]]; then
 			__out_files=()
 			if [[ $_arg_include_roles == 'on' ]]; then
 				PGPASSWORD=$_arg_pass pg_dumpall $marg_h $marg_u --no-password --roles-only --no-role-passwords | pv -trb -N roles > "roles"
@@ -304,7 +325,7 @@ if [[ $_arg_go == 'on' ]]; then
 	fi
 	if [[ -r $temp_file && $_arg_skip_import == 'off' ]]; then
 		echo 'Importing data to local database'
-		if [[ $_arg_psql == 'on' ]]; then
+		if [[ $DB_MODE == 'psql' ]]; then
 			PGPASSWORD=$POSTGRES_PASSWORD tar -xzf $temp_file --to-command="pv -trbp -N \$TAR_FILENAME -s \$TAR_SIZE | psql -U$POSTGRES_USER --quiet --output=/dev/null"
 		else
 			pv "$temp_file" | gunzip | mysql -uroot --password="$MARIADB_ROOT_PASSWORD"
