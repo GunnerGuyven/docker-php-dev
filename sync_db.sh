@@ -7,6 +7,9 @@
 # ARG_OPTIONAL_BOOLEAN([go],[g],[Perform import])
 # ARG_OPTIONAL_BOOLEAN([skip-download],[d],[Skip download step])
 # ARG_OPTIONAL_BOOLEAN([skip-import],[i],[Skip import step])
+# ARG_OPTIONAL_BOOLEAN([psql],[],[Use PostgreSQL instead of MySQL])
+# ARG_OPTIONAL_BOOLEAN([locale-fix],[],[Replace known Windows locale with Unix (PostgreSQL only)],[on])
+# ARG_OPTIONAL_BOOLEAN([include-roles],[],[Grab all roles from target server (PostgreSQL only)])
 # ARG_POSITIONAL_INF([dbname],[The name of the database we are importing])
 # ARG_DEFAULTS_POS([])
 # ARG_HELP([A helper for syncing local data from remote])
@@ -43,12 +46,15 @@ _arg_pass=
 _arg_go="off"
 _arg_skip_download="off"
 _arg_skip_import="off"
+_arg_psql="off"
+_arg_locale_fix="on"
+_arg_include_roles="off"
 
 
 print_help()
 {
 	printf '%s\n' "A helper for syncing local data from remote"
-	printf 'Usage: %s [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [-h|--help] [<dbname-1>] ... [<dbname-n>] ...\n' "$0"
+	printf 'Usage: %s [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [--(no-)psql] [--(no-)locale-fix] [--(no-)include-roles] [-h|--help] [<dbname-1>] ... [<dbname-n>] ...\n' "$0"
 	printf '\t%s\n' "<dbname>: The name of the database we are importing"
 	printf '\t%s\n' "-r, --host: Remote database host (no default)"
 	printf '\t%s\n' "-u, --user: Remote database user (no default)"
@@ -56,6 +62,9 @@ print_help()
 	printf '\t%s\n' "-g, --go, --no-go: Perform import (off by default)"
 	printf '\t%s\n' "-d, --skip-download, --no-skip-download: Skip download step (off by default)"
 	printf '\t%s\n' "-i, --skip-import, --no-skip-import: Skip import step (off by default)"
+	printf '\t%s\n' "--psql, --no-psql: Use PostgreSQL instead of MySQL (off by default)"
+	printf '\t%s\n' "--locale-fix, --no-locale-fix: Replace known Windows locale with Unix (PostgreSQL only) (on by default)"
+	printf '\t%s\n' "--include-roles, --no-include-roles: Grab all roles from target server (PostgreSQL only) (off by default)"
 	printf '\t%s\n' "-h, --help: Prints help"
 }
 
@@ -136,6 +145,18 @@ parse_commandline()
 					{ begins_with_short_option "$_next" && shift && set -- "-i" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
 				fi
 				;;
+			--no-psql|--psql)
+				_arg_psql="on"
+				test "${1:0:5}" = "--no-" && _arg_psql="off"
+				;;
+			--no-locale-fix|--locale-fix)
+				_arg_locale_fix="on"
+				test "${1:0:5}" = "--no-" && _arg_locale_fix="off"
+				;;
+			--no-include-roles|--include-roles)
+				_arg_include_roles="on"
+				test "${1:0:5}" = "--no-" && _arg_include_roles="off"
+				;;
 			-h|--help)
 				print_help
 				exit 0
@@ -192,8 +213,13 @@ rdbs="${_arg_dbname[@]}"
 if [[ $_arg_skip_download == 'off' ]]; then
 	echo -n 'Retrieving size information for '
 	if [[ -n $_arg_dbname ]]; then
+		if [[ $_arg_psql == 'on' ]]; then
+			db_name_field="d.datname"
+		else
+			db_name_field="table_schema"
+		fi
 		echo "remote database(s) '$rdbs'"
-		schema_filter="AND table_schema IN ('$_arg_dbname'"
+		schema_filter="$db_name_field IN ('$_arg_dbname'"
 		for (( i=1; i<${#_arg_dbname[@]}; i++ )); do
 			schema_filter+=",'${_arg_dbname[$i]}'"
 		done
@@ -201,27 +227,47 @@ if [[ $_arg_skip_download == 'off' ]]; then
 	else
 		echo 'all remote databases'
 	fi
-	remote_size="
-	SELECT
-		table_schema AS 'Database'
-		,COUNT(*) AS '#Tables'
-		,ROUND(SUM(table_rows)/1000000,4) AS '#Rows (M)'
-		,ROUND(SUM(data_length+index_length)/(1024*1024),4) 'Size (Mb)'
-	FROM information_schema.TABLES
-	WHERE table_schema <> 'information_schema'
-	$schema_filter
-	GROUP BY table_schema
-	ORDER BY SUM(data_length+index_length)
-	DESC;
-	"
 
-	if [[ -n $_arg_pass ]]; then
-		echo 'TODO: remote password not presently supported, sorry'
-		exit 1
+	if [[ $_arg_psql == 'on' ]]; then
+		remote_size="
+		SELECT d.datname as Database,  pg_catalog.pg_get_userbyid(d.datdba) as Owner,
+    CASE WHEN pg_catalog.has_database_privilege(d.datname, 'CONNECT')
+        THEN pg_catalog.pg_size_pretty(pg_catalog.pg_database_size(d.datname))
+        ELSE 'No Access'
+    END as Size
+		FROM pg_catalog.pg_database d
+		${schema_filter:+WHERE $schema_filter}
+    ORDER BY
+    CASE WHEN pg_catalog.has_database_privilege(d.datname, 'CONNECT')
+        THEN pg_catalog.pg_database_size(d.datname)
+        ELSE NULL
+    END DESC;
+		"
+		# credit to: https://stackoverflow.com/a/70843687
+
+		marg_h=${_arg_host:+"-h$_arg_host"}
+		marg_u=${_arg_user:+"-U$_arg_user"}
+		echo $remote_size | PGPASSWORD=$_arg_pass psql $marg_h $marg_u --no-password
+	else
+		remote_size="
+		SELECT
+			table_schema AS 'Database'
+			,COUNT(*) AS '#Tables'
+			,ROUND(SUM(table_rows)/1000000,4) AS '#Rows (M)'
+			,ROUND(SUM(data_length+index_length)/(1024*1024),4) 'Size (Mb)'
+		FROM information_schema.TABLES
+		WHERE table_schema <> 'information_schema'
+		${schema_filter:+AND $schema_filter}
+		GROUP BY table_schema
+		ORDER BY SUM(data_length+index_length)
+		DESC;
+		"
+
+		marg_h=${_arg_host:+"-h$_arg_host"}
+		marg_u=${_arg_user:+"-u$_arg_user"}
+		marg_p=${_arg_pass:+"-p$_arg_pass"}
+		echo $remote_size | mysql -t $marg_h $marg_u $marg_p
 	fi
-	marg_h=${_arg_host:+"-h$_arg_host"}
-	marg_u=${_arg_user:+"-u$_arg_user"}
-	echo $remote_size | mysql -t $marg_h $marg_u
 fi
 
 if [[ $_arg_go == 'on' ]]; then
@@ -229,14 +275,40 @@ if [[ $_arg_go == 'on' ]]; then
 		pushd ./temp/sync_db/ &> /dev/null
 		intempdir=yes
 	fi
-	temp_file="${rdbs// /+}.sql.gz"
+	if [[ $_arg_psql == 'on' ]]; then
+		temp_file="${rdbs// /+}.sql.tar.gz"
+	else
+		temp_file="${rdbs// /+}.sql.gz"
+	fi
 	if [[ $_arg_skip_download == 'off' ]]; then
 		echo "Performing download of '$rdbs'"
-		mysqldump --lock-tables=false --single-transaction=true --default-character-set=latin1 $marg_h $marg_u --add-drop-database --databases $rdbs | pv -trb | gzip > "$temp_file"
+		if [[ $_arg_psql == 'on' ]]; then
+			__out_files=()
+			if [[ $_arg_include_roles == 'on' ]]; then
+				PGPASSWORD=$_arg_pass pg_dumpall $marg_h $marg_u --no-password --roles-only --no-role-passwords | pv -trb -N roles > "roles"
+				__out_files+=("roles")
+			fi
+			for (( i=0; i<${#_arg_dbname[@]}; i++ )); do
+				__db=${_arg_dbname[$i]}
+				__file="${__db// /_}"
+				__out_files+=($__file)
+				PGPASSWORD=$_arg_pass pg_dump $marg_h $marg_u --no-password --create --clean --if-exists --dbname="$__db" | pv -trb -N $__file > $__file
+				if [[ $_arg_locale_fix == 'on' ]]; then
+					sed -i "s|LOCALE = 'English_United States.1252'|LOCALE = 'en_US.utf8'|" $__file
+				fi
+			done
+			tar -czf $temp_file ${__out_files[@]} --remove-files
+		else
+			mysqldump --lock-tables=false --single-transaction=true --default-character-set=latin1 $marg_h $marg_u $marg_p --add-drop-database --databases $rdbs | pv -trb | gzip > "$temp_file"
+		fi
 	fi
 	if [[ -r $temp_file && $_arg_skip_import == 'off' ]]; then
 		echo 'Importing data to local database'
-		pv "$temp_file" | gunzip | mysql -uroot --password="$MARIADB_ROOT_PASSWORD"
+		if [[ $_arg_psql == 'on' ]]; then
+			PGPASSWORD=$POSTGRES_PASSWORD tar -xzf $temp_file --to-command="pv -trbp -N \$TAR_FILENAME -s \$TAR_SIZE | psql -U$POSTGRES_USER --quiet --output=/dev/null"
+		else
+			pv "$temp_file" | gunzip | mysql -uroot --password="$MARIADB_ROOT_PASSWORD"
+		fi
 	fi
 	if [[ -n $intempdir ]]; then
 		popd &> /dev/null
