@@ -70,7 +70,7 @@ services:
     # image: mariadb
     volumes:
       - mydb:/var/lib/mysql
-      # - ./temp/sync_db:/temp/sync_db
+      # - ./temp/my_sync_db:/temp/sync_db
       # - ./sync_db.sh:/sync_db.sh
       # - ./my.cnf:/etc/mysql/my.cnf
     environment:
@@ -78,13 +78,21 @@ services:
       MARIADB_DATABASE: mydb
       MARIADB_USER: mydb
       MARIADB_PASSWORD: abc123
-  # pg_db:
-  #   image: postgres
-  #   volumes:
-  #     - pgdb:/var/lib/postgresql/data
-  #   environment:
-  #     POSTGRES_USER: pgdb
-  #     POSTGRES_PASSWORD: abc123
+
+  pg_db:
+    build:
+      context: .
+      dockerfile: dockerfile.postgres
+    image: pgdb-dev:0.4.0
+    # image: postgres
+    volumes:
+      - pgdb:/var/lib/postgresql/data
+      # - ./temp/pg_sync_db:/temp/sync_db
+      # - ./sync_db.sh:/sync_db.sh
+    environment:
+      POSTGRES_USER: pgdb
+      POSTGRES_PASSWORD: abc123
+
   adminer:
     image: adminer
     ports: 
@@ -93,4 +101,4 @@ services:
 volumes:
   php-dev-context:
   mydb:
-  # pgdb:
+  pgdb:
