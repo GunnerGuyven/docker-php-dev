@@ -23,9 +23,9 @@ To run it use the command:
 ```console
 $ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh -h
 A helper for syncing local data from remote
-Usage: sync_db.sh [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [--(no-)psql] [--(no-)maria] [--(no-)locale-fix] [--(no-)include-roles] [-h|--help] [<dbname-1>] ... [<dbname-n>] ...
-        <dbname>: The name of the database we are importing
-        -r, --host: Remote database host (no default)
+Usage: sync_db.sh [-u|--user <arg>] [-p|--pass <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [--(no-)psql] [--(no-)maria] [--(no-)locale-fix] [--(no-)include-roles] [-h|--help] <host> [<dbname-1>] ... [<dbname-n>] ...
+        <host>: Remote database host
+        <dbname>: The database name(s) we are importing
         -u, --user: Remote database user (no default)
         -p, --pass: Remote database password (no default)
         -g, --go, --no-go: Perform import (off by default)
@@ -43,7 +43,7 @@ Examine your environment for the proper container name in the above command.
 When you choose to execute you'll see a result such as:
 
 ```console
-$ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh -r backup.remote.com central --go
+$ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh backup.remote.com central --go
 Retrieving size information for remote database(s) 'central'
 +----------+---------+-----------+-----------+
 | Database | #Tables | #Rows (M) | Size (Mb) |
@@ -51,9 +51,9 @@ Retrieving size information for remote database(s) 'central'
 | central  |      16 |    0.0187 |    3.3393 |
 +----------+---------+-----------+-----------+
 Performing download of 'central'
-1.81MiB 0:00:05 [ 338KiB/s]
+  central: 1.81MiB 0:00:05 [ 338KiB/s]
 Importing data to local database
- 240KiB 0:00:00 [ 133MiB/s] [==============================>] 100%
+  central: 240KiB 0:00:00 [ 133MiB/s] [==============================>] 100%
 ```
 
 Naturally, edit this script to your needs.
