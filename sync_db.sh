@@ -334,9 +334,9 @@ if [[ $_arg_go == 'on' ]]; then
 		echo
 		echo 'Importing data to local database'
 		if [[ $DB_MODE == 'psql' ]]; then
-			PGPASSWORD=$POSTGRES_PASSWORD tar -xzf $temp_file --to-command="pv -trbp -N \$TAR_FILENAME -s \$TAR_SIZE | psql -U$POSTGRES_USER --quiet --output=/dev/null"
+			PGPASSWORD=$POSTGRES_PASSWORD tar -xzf $temp_file --to-command="pv -N \$TAR_FILENAME -s \$TAR_SIZE | psql -U$POSTGRES_USER --quiet --output=/dev/null"
 		else
-			tar -xzf $temp_file --to-command="pv -trbp -N \$TAR_FILENAME -s \$TAR_SIZE | mysql -uroot --password='$MARIADB_ROOT_PASSWORD'"
+			tar -xzf $temp_file --to-command="pv -N \$TAR_FILENAME -s \$TAR_SIZE | mysql -uroot --password='$MARIADB_ROOT_PASSWORD'"
 		fi
 	fi
 	if [[ -n $intempdir ]]; then
