@@ -44,16 +44,22 @@ When you choose to execute you'll see a result such as:
 
 ```console
 $ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh backup.remote.com central --go
+
 Retrieving size information for remote database(s) 'central'
 +----------+---------+-----------+-----------+
 | Database | #Tables | #Rows (M) | Size (Mb) |
 +----------+---------+-----------+-----------+
 | central  |      16 |    0.0187 |    3.3393 |
 +----------+---------+-----------+-----------+
+
 Performing download of 'central'
   central: 1.81MiB 0:00:05 [ 338KiB/s]
+
+Compiling result
+1.81MiB 0:00:00 [88.5MiB/s] [=========================================>] 100% 
+
 Importing data to local database
-  central: 240KiB 0:00:00 [ 133MiB/s] [==============================>] 100%
+  central: 1.81MiB 0:00:00 [ 133MiB/s] [==============================>] 100%
 ```
 
 Naturally, edit this script to your needs.
