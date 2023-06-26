@@ -1,6 +1,6 @@
-# What's happening here
+# Docker Based PHP Development Environment
 
-This represents an attempt to create a development environment for testing php code that is closer to what we have in production while also being accessible on machines where php 5.x is difficult to install.
+This is a collection of dockerfiles, scripts, settings, and a compose file tying them largely together to create a mostly ready-to-go environment for development.
 
 ## Database
 
