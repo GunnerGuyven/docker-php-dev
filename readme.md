@@ -43,7 +43,7 @@ Examine your environment for the proper container name in the above command.
 When you choose to execute you'll see a result such as:
 
 ```console
-$ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh backup.remote.com central --go
+$ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh -r backup.remote.com central --go
 
 Retrieving size information for remote database(s) 'central'
 +----------+---------+-----------+-----------+
