@@ -11,8 +11,8 @@ To import, uncomment the extra lines in this section of `docker-compose.yml`:
 ```yaml
 volumes:
   - mydb:/var/lib/mysql
-  # - ./temp/db_import:/db_import_temp
-  # - ./sync_db.sh:/db_import_temp/sync_db.sh
+  # - ./temp/my_sync_db:/temp/sync_db
+  # - ./sync_db.sh:/sync_db.sh
   # - ./my.cnf:/etc/mysql/my.cnf
 ```
 
