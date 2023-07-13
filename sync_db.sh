@@ -330,13 +330,17 @@ if [[ $_arg_go == 'on' ]]; then
 		tar cf - ${__out_files[@]} | pv -s $(du -scb ${__out_files[@]} | awk '{print $1}' | tail -n1) | gzip > $temp_file
 		rm ${__out_files[@]}
 	fi
-	if [[ -r $temp_file && $_arg_skip_import == 'off' ]]; then
-		echo
-		echo 'Importing data to local database'
-		if [[ $DB_MODE == 'psql' ]]; then
-			PGPASSWORD=$POSTGRES_PASSWORD tar -xzf $temp_file --to-command="pv -N \$TAR_FILENAME -s \$TAR_SIZE | psql -U$POSTGRES_USER --quiet --output=/dev/null"
+	if [[ $_arg_skip_import == 'off' ]]; then
+		if [[ -r $temp_file ]]; then
+			echo
+			echo 'Importing data to local database'
+			if [[ $DB_MODE == 'psql' ]]; then
+				PGPASSWORD=$POSTGRES_PASSWORD tar -xzf $temp_file --to-command="pv -N \$TAR_FILENAME -s \$TAR_SIZE | psql -U$POSTGRES_USER --quiet --output=/dev/null"
+			else
+				tar -xzf $temp_file --to-command="pv -N \$TAR_FILENAME -s \$TAR_SIZE | mysql -uroot --password='$MARIADB_ROOT_PASSWORD'"
+			fi
 		else
-			tar -xzf $temp_file --to-command="pv -N \$TAR_FILENAME -s \$TAR_SIZE | mysql -uroot --password='$MARIADB_ROOT_PASSWORD'"
+			echo "Import: Expected archive file '$temp_file' not found"
 		fi
 	fi
 	if [[ -n $intempdir ]]; then
