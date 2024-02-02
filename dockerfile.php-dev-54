@@ -3,34 +3,35 @@ FROM php:5.4-fpm
 # Zend Engine v2.4.0, Copyright (c) 1998-2014 Zend Technologies
 # Debian 8 (jessie)
 
-RUN apt-get -y update && apt-get -y install \
-  git \
-  libicu52 \
-  openssh-server
+# Debian 8 has been moved to archive
+# RUN <<EOR
+# cat << EOF > /etc/apt/sources.list
+# deb http://archive.debian.org/debian jessie main
+# deb http://archive.debian.org/debian-security jessie/updates main
+# EOF
+# EOR
 
-RUN curl -LJO https://github.com/PowerShell/PowerShell/releases/download/v7.2.6/powershell-lts_7.2.6-1.deb_amd64.deb
-RUN dpkg -i powershell-lts_7.2.6-1.deb_amd64.deb
-RUN rm powershell-lts_7.2.6-1.deb_amd64.deb
-
-RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
-RUN curl https://getmic.ro | bash
-RUN mv micro /usr/bin
+# disable expired CA
+RUN sed -i '/^mozilla\/DST_Root_CA_X3.crt$/ s/^/!/' /etc/ca-certificates.conf
+RUN update-ca-certificates
 
 RUN docker-php-ext-install pdo_mysql mysqli
-# RUN pear install html_quickform
 
 # add xdebug
 RUN pecl channel-update pecl.php.net && \
   pecl install xdebug-2.4.1 && \
   docker-php-ext-enable xdebug
 
+ARG quickform_enabled
+RUN test $quickform_enabled -eq 1 && pear install html_quickform || :
+
 # # add dev user
 # RUN groupadd -r dev && useradd -r -g dev dev
 # RUN mkdir /home/dev
 # RUN chown -R dev:dev /home/dev
 
-COPY container_setup.ps1 /root/container_setup.ps1
+COPY container_setup.sh /root/container_setup.sh
 
 WORKDIR /work
 
-ENTRYPOINT [ "pwsh", "-f", "/root/container_setup.ps1" , "-Startup" ]
+ENTRYPOINT [ "bash", "/root/container_setup.sh" ]

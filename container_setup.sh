@@ -3,115 +3,74 @@
 # set -e #stop on error
 # set -x #echo all lines to console
 
-# context_mount=~/.mnt
 context_mount=/mnt/context
+pub_php_ini_defaults=/mnt/php_ini
+php_ini_defaults_path=/usr/src/php         # php 5.4
+php_ini_defaults_path2=/usr/local/etc/php  # php 7.4
 
-: ${SSH_KEY_BITBUCKET:=id_docker_php_bitbucket}
-: ${SSH_KEY_TERM:=id_docker_php_ssh_term}
+# colors
+[[ -t 1 ]] || export TERM=dumb
+declare -A colors_fg
+colors_fg[black]=$(tput setaf 0)
+colors_fg[red]=$(tput setaf 1)
+colors_fg[green]=$(tput setaf 2)
+colors_fg[yellow]=$(tput setaf 3)
+colors_fg[blue]=$(tput setaf 4)
+colors_fg[purple]=$(tput setaf 5)
+colors_fg[cyan]=$(tput setaf 6)
+colors_fg[white]=$(tput setaf 7)
 
-prompt_quit() {
-  show = ${1:-"Proceed? [yN]"}
-  read -n1 -p $show prompt
-  if [[ ! ($prompt == 'y' || $prompt == 'Y') ]]; then
-    echo "Aborting..."
-    echo
-    exit 1
-  fi
-}
+_txt_fg_default=${colors_fg[white]}
+echo $_txt_fg_default
 
-if [ ! -d $context_mount ]; then
-  echo "This container requires a context mount for proper operation"
-  echo "Please mount a volume to: $context_mount"
-  prompt_quit
+black() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+red() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+green() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+yellow() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+blue() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+purple() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+cyan() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+white() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+
+if [[ -d $pub_php_ini_defaults ]]; then
+	printf "Retrieving PHP defaults %s " $(blue '...')
+	if [[ -d $php_ini_defaults_path ]]; then
+		cp $php_ini_defaults_path/php.ini-* $pub_php_ini_defaults/
+	else
+		cp $php_ini_defaults_path2/php.ini-* $pub_php_ini_defaults/
+	fi
+	echo $(yellow 'copied')
 fi
 
-if [ ! -f $context_mount/.noprompt ]; then
-  echo "This container's context appears to be uninitialized."
-  # echo "This is likely because you have not mounted a state volume to"
-  # echo "'$HOME/.mnt'.  If you have, and this is your first use of this image"
-  # echo "this message is safe to ignore, otherwise, you should abort"
-  # echo "and mount context properly.  Failure to do this will result in"
-  # echo "a lack of correctly saved settings after you stop this container"
-
-  read -n1 -p "Perform initialization? [yN]" prompt
-  if [[ ! ($prompt == 'y' || $prompt == 'Y') ]]; then
-    echo "Aborting..."
-    echo
-    exit 1
-  fi
-  touch $context_mount/.noprompt
-fi
-
-# add gitconfig values
-if [ ! -f ~/.gitconfig ]; then
-  if [ ! -f $context_mount/gitconfig ]; then
-    touch $context_mount/gitconfig
-    ln -s $context_mount/gitconfig ~/.gitconfig
-    echo
-    echo "Configuring git:"
-    if [[ -n $DEFAULT_GIT_USER ]]; then
-      echo "   name: $DEFAULT_GIT_USER"
-      prompt="$DEFAULT_GIT_USER"
-    else
-      read -p "   name: " prompt
-    fi
-    if [[ -n "$prompt" ]]; then
-      git config --global --add user.name "$prompt"
-    fi
-    if [[ -n $DEFAULT_GIT_EMAIL ]]; then
-      echo "  email: $DEFAULT_GIT_EMAIL"
-      prompt=$DEFAULT_GIT_EMAIL
-    else
-      read -p "  email: " prompt
-    fi
-    if [[ -n "$prompt" ]]; then
-      git config --global --add user.email "$prompt"
-    fi
-  else
-    ln -s $context_mount/gitconfig ~/.gitconfig
-  fi
-fi
-
-# create git ssh key
-if [ ! -d ~/.ssh ]; then
-  if [ ! -d $context_mount/ssh ]; then
-    mkdir $context_mount/ssh
-  fi
-  ln -s $context_mount/ssh ~/.ssh
-fi
-
-if [ ! -f ~/.ssh/config ]; then
-echo
-echo "Configuring ssh:"
-
-cat > ~/.ssh/config << EOL
-Host bitbucket.org
-IdentityFile ~/.ssh/$SSH_KEY_BITBUCKET
-EOL
-
-if [ ! -f ~/.ssh/$SSH_KEY_BITBUCKET ]; then
-  echo "Creating ssh key for git+bitbucket: "
-  ssh-keygen -q -N '' -f ~/.ssh/$SSH_KEY_BITBUCKET
-  echo "Key named: $SSH_KEY_BITBUCKET"
-fi
-
-echo
-echo "Remember to register this public key with bitbucket:"
-echo
-cat ~/.ssh/$SSH_KEY_BITBUCKET.pub
+if [[ -n $PHP_WORK_DIRS ]]; then
+	printf "PHP workspaces %s %s\n" $(blue '............') $(yellow 'creating')
+	IFS=';'
+	for dir in $PHP_WORK_DIRS; do
+		if [[ -d $dir ]]; then
+			printf $(green '  _ ')
+		else
+			mkdir -p $dir # &> /dev/null
+			printf $(blue '  + ')
+		fi
+		chown -R www-data:www-data $dir
+		echo $dir
+	done
 
 fi
 
-# create ssh keys for terminal access
-if [ ! -f ~/.ssh/$SSH_KEY_TERM ]; then
-  ssh-keygen -q -N '' -f ~/.ssh/$SSH_KEY_TERM
-  cat ~/.ssh/$SSH_KEY_TERM.pub >> ~/.ssh/authorized_keys
+exec php-fpm
 
-  echo
-  echo "Remember to register this private key on your client machine"
-  echo "if you wish to connect to this container using ssh:"
-  echo "~/.ssh/$SSH_KEY_TERM"
-  
-fi
+# prompt_quit() {
+# 	local res prompt=${1:-"Proceed?"}
+# 	read -n1 -p "$prompt [yN]" res
+# 	if [[ ! ($res == 'y' || $res == 'Y') ]]; then
+# 		exit 1
+# 	fi
+# }
 
-echo
+# if [ ! -d $context_mount ]; then
+# 	echo "This container requires a context mount for proper operation"
+# 	printf 'Please mount a volume to: %s\n' $(purple $context_mount)
+# 	echo
+# 	exit 1
+# fi
