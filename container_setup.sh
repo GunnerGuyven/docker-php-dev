@@ -9,28 +9,39 @@ php_ini_defaults_path=/usr/src/php         # php 5.4
 php_ini_defaults_path2=/usr/local/etc/php  # php 7.4
 
 # colors
-[[ -t 1 ]] || export TERM=dumb
-declare -A colors_fg
-colors_fg[black]=$(tput setaf 0)
-colors_fg[red]=$(tput setaf 1)
-colors_fg[green]=$(tput setaf 2)
-colors_fg[yellow]=$(tput setaf 3)
-colors_fg[blue]=$(tput setaf 4)
-colors_fg[purple]=$(tput setaf 5)
-colors_fg[cyan]=$(tput setaf 6)
-colors_fg[white]=$(tput setaf 7)
+if command -v tput &> /dev/null ; then
+	[[ -t 1 ]] || export TERM=dumb
+	declare -A colors_fg
+	colors_fg[black]=$(tput setaf 0)
+	colors_fg[red]=$(tput setaf 1)
+	colors_fg[green]=$(tput setaf 2)
+	colors_fg[yellow]=$(tput setaf 3)
+	colors_fg[blue]=$(tput setaf 4)
+	colors_fg[purple]=$(tput setaf 5)
+	colors_fg[cyan]=$(tput setaf 6)
+	colors_fg[white]=$(tput setaf 7)
 
-_txt_fg_default=${colors_fg[white]}
-echo $_txt_fg_default
+	_txt_fg_default=${colors_fg[white]}
+	echo $_txt_fg_default
 
-black() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
-red() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
-green() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
-yellow() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
-blue() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
-purple() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
-cyan() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
-white() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+	black() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+	red() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+	green() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+	yellow() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+	blue() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+	purple() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+	cyan() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+	white() { printf "${colors_fg[$FUNCNAME]}$1$_txt_fg_default"; }
+else
+	black() { printf "$1"; }
+	red() { printf "$1"; }
+	green() { printf "$1"; }
+	yellow() { printf "$1"; }
+	blue() { printf "$1"; }
+	purple() { printf "$1"; }
+	cyan() { printf "$1"; }
+	white() { printf "$1"; }
+fi
 
 if [[ -d $pub_php_ini_defaults ]]; then
 	printf "Retrieving PHP defaults %s " $(blue '...')

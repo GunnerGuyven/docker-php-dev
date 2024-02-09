@@ -80,9 +80,33 @@ A freeware utility called Argbash was used to help generate this script specific
 argbash sync_db.sh -o sync_db.sh
 ```
 
-## TODO
+### Postgres connection from very old clients
 
-- [x] Create a mechanism to specify one or several directories that can be made writable by the PHP process.
-    - Expectation is to use an ENV variable that is a list of paths delimited by semi-colon
-    - This can be useful for template generators like Smarty that need a directory to do their work in.
-    - The alternative is to require the user to create a directory on a mount and give it wide permissions (+777) to accomplish this, but that is a tedium and insists on the external management of this dir (it may be desired that the directory is ephemerial and internally managed, for instance).
+Postgres v10 moved to a default SCRAM method for login that is unsupported in pgsql clients that are older (such as those included in the php 5.5 dockerfile in this project).  These clients are able to be supported by enabling the overrides for `postgresql.conf` and `pg_hba.conf` that have been included, but this presents a challenge during setup.
+
+When starting from a clean data volume for Postgres do not include these file overrides as they will confound the first-time-setup process.
+
+```yaml
+    volumes:
+      - pgdb:/var/lib/postgresql/data
+      # - ./pg15-postgresql.conf:/var/lib/postgresql/data/postgresql.conf
+      # - ./pg15-pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+```
+
+After setup is complete and the engine is accessible, you must restart the container with these config file mounts added, and then reset the password of the user in question to cause its password storage hash to be recalculated to the older standard.
+
+```console
+$ docker exec -it docker-php-dev-pg_db-1 psql -U pgdb
+psql (15.5 (Debian 15.5-1.pgdg120+1))
+Type "help" for help.
+
+pgdb=# ALTER USER pgdb WITH PASSWORD 'abc123';
+ALTER ROLE
+pgdb=# exit;
+```
+
+Restart the Postgres container once more and you should be set.  Replace the usernames and passwords above with those you have chosen.
+
+## Configuration
+
+Launching docker compose with the `-f` flag allows you to specify a number of configurations which will be applied in order.  Using this, you can supply modifications to the given docker-compose.yml in a separate file for convenience.

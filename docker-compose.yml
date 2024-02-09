@@ -1,14 +1,14 @@
 version: '3'
 services:
-  php54:
+  php55:
     build:
       # ulimits:
       #   nofile: 10000 # required if you wish to use apt-get
       context: .
-      dockerfile: dockerfile.php-dev-54
+      dockerfile: dockerfile.php-dev-55
       # args:
       #   quickform_enabled: 1
-    image: php-dev:0.6.0-54
+    image: php-dev:0.6.2-55
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -19,7 +19,7 @@ services:
       - php-dev-context:/mnt/context
       # - ./context:/mnt/context
       # - ./term_keys:/mnt/term_keys
-      # - ./php_ini:/mnt/php_ini
+      # - ./php_ini:/mnt/php_ini # to receive original config
       # - ./container_setup.sh:/root/container_setup.sh
       # - ./php54.ini:/usr/local/etc/php/php.ini
       # - ./www:/var/www/html
@@ -30,7 +30,7 @@ services:
     build:
       context: .
       dockerfile: dockerfile.php-dev-74
-    image: php-dev:0.6.0-74
+    image: php-dev:0.6.2-74
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -78,8 +78,8 @@ services:
     # image: mariadb
     volumes:
       - mydb:/var/lib/mysql
-      # - ./temp/my_sync_db:/temp/sync_db
-      # - ./sync_db.sh:/sync_db.sh
+      - ./temp/my_sync_db:/temp/sync_db
+      - ./sync_db.sh:/sync_db.sh
       # - ./my.cnf:/etc/mysql/my.cnf
     environment:
       MARIADB_ROOT_PASSWORD: poi098
@@ -92,11 +92,15 @@ services:
       context: .
       dockerfile: dockerfile.postgres
     image: pgdb-dev:0.4.0
-    # image: postgres
+    # image: postgres:15 # PostgreSQL version: 15.5 (Debian 15.5-1.pgdg120+1) through PHP extension PgSQL
+    # ports:
+    #   - 5432:5432
     volumes:
       - pgdb:/var/lib/postgresql/data
-      # - ./temp/pg_sync_db:/temp/sync_db
-      # - ./sync_db.sh:/sync_db.sh
+      # - ./pg15-postgresql.conf:/var/lib/postgresql/data/postgresql.conf
+      # - ./pg15-pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+      - ./temp/pg_sync_db:/temp/sync_db
+      - ./sync_db.sh:/sync_db.sh
     environment:
       POSTGRES_USER: pgdb
       POSTGRES_PASSWORD: abc123

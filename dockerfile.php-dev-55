@@ -1,0 +1,22 @@
+FROM php:5.5-fpm-alpine
+# PHP 5.5.38 (cli) (built: Aug 10 2016 21:15:09) 
+# Zend Engine v2.5.0, Copyright (c) 1998-2015 Zend Technologies
+# Alpine 3.4.0
+
+RUN apk update && apk add bash postgresql-dev autoconf build-base
+
+RUN docker-php-ext-install pdo_pgsql pdo_mysql mysqli
+
+# add xdebug
+RUN pecl channel-update pecl.php.net && \
+  pecl install xdebug-2.4.1 && \
+  docker-php-ext-enable xdebug
+
+ARG quickform_enabled
+RUN test $quickform_enabled -eq 1 && pear install html_quickform || :
+
+COPY container_setup.sh /root/container_setup.sh
+
+WORKDIR /work
+
+ENTRYPOINT [ "bash", "/root/container_setup.sh" ]
