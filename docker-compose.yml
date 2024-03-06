@@ -18,7 +18,6 @@ services:
     volumes:
       - php-dev-context:/mnt/context
       # - ./context:/mnt/context
-      # - ./term_keys:/mnt/term_keys
       # - ./php_ini:/mnt/php_ini # to receive original config
       # - ./container_setup.sh:/root/container_setup.sh
       # - ./php54.ini:/usr/local/etc/php/php.ini
@@ -51,7 +50,7 @@ services:
   nginx54:
     depends_on:
       - php54
-    image: nginx:alpine
+    image: nginx:1.24-alpine
     ports:
       - 5054:80
     volumes:
@@ -62,7 +61,7 @@ services:
   nginx74:
     depends_on:
       - php74
-    image: nginx:alpine
+    image: nginx:1.24-alpine
     ports:
       - 5074:80
     volumes:

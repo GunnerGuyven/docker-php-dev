@@ -110,3 +110,7 @@ Restart the Postgres container once more and you should be set.  Replace the use
 ## Configuration
 
 Launching docker compose with the `-f` flag allows you to specify a number of configurations which will be applied in order.  Using this, you can supply modifications to the given docker-compose.yml in a separate file for convenience.
+
+## Trigger PHP Debugging Manually
+
+XDEBUG_SESSION_START=session_name
