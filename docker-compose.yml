@@ -46,6 +46,7 @@ services:
       # - ./www:/var/www/html
       # - ./lib:/var/www/lib
     env_file: php_env
+    stop_grace_period: 1s
 
   nginx54:
     depends_on:
