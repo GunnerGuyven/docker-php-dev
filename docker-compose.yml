@@ -50,7 +50,7 @@ services:
 
   nginx54:
     depends_on:
-      - php54
+      - php55
     image: nginx:1.24-alpine
     ports:
       - 5054:80
