@@ -4,7 +4,7 @@ server {
     server_name  localhost;
 
     fastcgi_read_timeout 300;
-    
+
     proxy_read_timeout 300;
     proxy_connect_timeout 300;
     proxy_send_timeout 300;
@@ -14,6 +14,7 @@ server {
     #access_log  /var/log/nginx/host.access.log  main;
 
     location / {
+        autoindex on;
         root   /usr/share/nginx/html;
         index  index.html index.htm;
     }
@@ -37,7 +38,7 @@ server {
     #
     location ~ \.php$ {
        root           /var/www/html;
-       fastcgi_pass   php74:9000;
+       fastcgi_pass   ${PHP_HOST}:9000;
        fastcgi_index  index.php;
        fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
        include        fastcgi_params;
