@@ -4,6 +4,7 @@
 # ARG_OPTIONAL_SINGLE([host],[r],[Remote database host])
 # ARG_OPTIONAL_SINGLE([user],[u],[Remote database user])
 # ARG_OPTIONAL_SINGLE([pass],[p],[Remote database password])
+# ARG_OPTIONAL_SINGLE([port],[t],[Remote database port])
 # ARG_OPTIONAL_BOOLEAN([go],[g],[Perform import])
 # ARG_OPTIONAL_BOOLEAN([skip-download],[d],[Skip download step])
 # ARG_OPTIONAL_BOOLEAN([skip-import],[i],[Skip import step])
@@ -32,7 +33,7 @@ die()
 
 begins_with_short_option()
 {
-	local first_option all_short_options='rupgdih'
+	local first_option all_short_options='ruptgdih'
 	first_option="${1:0:1}"
 	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
 }
@@ -44,6 +45,7 @@ _arg_dbname=()
 _arg_host=
 _arg_user=
 _arg_pass=
+_arg_port=
 _arg_go="off"
 _arg_skip_download="off"
 _arg_skip_import="off"
@@ -56,11 +58,12 @@ _arg_include_roles="off"
 print_help()
 {
 	printf '%s\n' "A helper for syncing local data from remote"
-	printf 'Usage: %s [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [--(no-)psql] [--(no-)maria] [--(no-)locale-fix] [--(no-)include-roles] [-h|--help] [<dbname-1>] ... [<dbname-n>] ...\n' "$0"
+	printf 'Usage: %s [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-t|--port <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [--(no-)psql] [--(no-)maria] [--(no-)locale-fix] [--(no-)include-roles] [-h|--help] [<dbname-1>] ... [<dbname-n>] ...\n' "$0"
 	printf '\t%s\n' "<dbname>: The database name(s) we are importing"
 	printf '\t%s\n' "-r, --host: Remote database host (no default)"
 	printf '\t%s\n' "-u, --user: Remote database user (no default)"
 	printf '\t%s\n' "-p, --pass: Remote database password (no default)"
+	printf '\t%s\n' "-t, --port: Remote database port (no default)"
 	printf '\t%s\n' "-g, --go, --no-go: Perform import (off by default)"
 	printf '\t%s\n' "-d, --skip-download, --no-skip-download: Skip download step (off by default)"
 	printf '\t%s\n' "-i, --skip-import, --no-skip-import: Skip import step (off by default)"
@@ -111,6 +114,17 @@ parse_commandline()
 				;;
 			-p*)
 				_arg_pass="${_key##-p}"
+				;;
+			-t|--port)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_port="$2"
+				shift
+				;;
+			--port=*)
+				_arg_port="${_key##--port=}"
+				;;
+			-t*)
+				_arg_port="${_key##-t}"
 				;;
 			-g|--no-go|--go)
 				_arg_go="on"
@@ -275,7 +289,8 @@ if [[ $_arg_skip_download == 'off' ]]; then
 
 		marg_h=${_arg_host:+"-h$_arg_host"}
 		marg_u=${_arg_user:+"-U$_arg_user"}
-		echo $remote_size | PGPASSWORD=$_arg_pass psql $marg_h $marg_u --no-password
+		marg_t=${_arg_port:+"-p$_arg_port"}
+		echo $remote_size | PGPASSWORD=$_arg_pass psql $marg_h $marg_u $marg_t --no-password
 	else
 		remote_size="
 		SELECT
@@ -294,7 +309,8 @@ if [[ $_arg_skip_download == 'off' ]]; then
 		marg_h=${_arg_host:+"-h$_arg_host"}
 		marg_u=${_arg_user:+"-u$_arg_user"}
 		marg_p=${_arg_pass:+"-p$_arg_pass"}
-		echo $remote_size | mysql -t $marg_h $marg_u $marg_p
+		marg_t=${_arg_port:+"-P$_arg_port"}
+		echo $remote_size | mysql -t $marg_h $marg_u $marg_p $marg_t
 	fi
 fi
 
@@ -309,7 +325,7 @@ if [[ $_arg_go == 'on' ]]; then
 		echo "Performing download of '$rdbs'"
 		__out_files=()
 		if [[ $DB_MODE == 'psql' && $_arg_include_roles == 'on' ]]; then
-			PGPASSWORD=$_arg_pass pg_dumpall $marg_h $marg_u --no-password --roles-only --no-role-passwords | pv -trb -N roles > "roles"
+			PGPASSWORD=$_arg_pass pg_dumpall $marg_h $marg_u $marg_t --no-password --roles-only --no-role-passwords | pv -trb -N roles > "roles"
 			__out_files+=("roles")
 		fi
 		for (( i=0; i<${#_arg_dbname[@]}; i++ )); do
@@ -317,12 +333,12 @@ if [[ $_arg_go == 'on' ]]; then
 			__file="${__db// /_}"
 			__out_files+=($__file)
 			if [[ $DB_MODE == 'psql' ]]; then
-				PGPASSWORD=$_arg_pass pg_dump $marg_h $marg_u --no-password --create --clean --if-exists --dbname="$__db" | pv -trb -N $__file > $__file
+				PGPASSWORD=$_arg_pass pg_dump $marg_h $marg_u $marg_t --no-password --create --clean --if-exists --dbname="$__db" | pv -trb -N $__file > $__file
 				if [[ $_arg_locale_fix == 'on' ]]; then
 					sed -i "s|LOCALE = 'English_United States.1252'|LOCALE = 'en_US.utf8'|" $__file
 				fi
 			else
-				mysqldump --lock-tables=false --single-transaction=true --default-character-set=latin1 $marg_h $marg_u $marg_p --add-drop-database --databases $__db | pv -trb -N $__file > $__file
+				mysqldump --lock-tables=false --single-transaction=true --default-character-set=latin1 $marg_h $marg_u $marg_p $marg_t --add-drop-database --databases $__db | pv -trb -N $__file > $__file
 			fi
 		done
 		echo
