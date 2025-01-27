@@ -23,11 +23,12 @@ To run it use the command:
 ```console
 $ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh -h
 A helper for syncing local data from remote
-Usage: sync_db.sh [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [--(no-)psql] [--(no-)maria] [--(no-)locale-fix] [--(no-)include-roles] [-h|--help] [<dbname-1>] ... [<dbname-n>] ...
+Usage: sync_db.sh [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-t|--port <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [--(no-)psql] [--(no-)maria] [--(no-)locale-fix] [--(no-)include-roles] [-h|--help] [<dbname-1>] ... [<dbname-n>] ...
         <dbname>: The database name(s) we are importing
         -r, --host: Remote database host (no default)
         -u, --user: Remote database user (no default)
         -p, --pass: Remote database password (no default)
+        -t, --port: Remote database port (no default)
         -g, --go, --no-go: Perform import (off by default)
         -d, --skip-download, --no-skip-download: Skip download step (off by default)
         -i, --skip-import, --no-skip-import: Skip import step (off by default)
