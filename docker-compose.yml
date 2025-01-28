@@ -47,6 +47,28 @@ services:
     env_file: php_env
     stop_grace_period: 1s
 
+  php82:
+    build:
+      context: .
+      dockerfile: dockerfile.php-dev-82
+    image: php-dev:0.6.3-82
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "2224:22"
+    expose:
+      - 9000
+    volumes:
+      - php-dev-context:/mnt/context
+      # - ./context:/mnt/context
+      # - ./term_keys:/mnt/term_keys
+      # - ./php_ini:/mnt/php_ini
+      # - ./container_setup.ps1:/root/container_setup.ps1
+      # - ./php74.ini:/usr/local/etc/php/php.ini
+      # - ./www:/var/www/html
+      # - ./lib:/var/www/lib
+    env_file: php_env
+
   nginx55:
     depends_on:
       - php55
@@ -72,6 +94,19 @@ services:
       - ./nginx.conf.template:/etc/nginx/templates/default.conf.template
     environment:
       - PHP_HOST=php74
+
+  nginx82:
+    depends_on:
+      - php82
+    image: nginx:1.24-alpine
+    ports:
+      - 5082:80
+    volumes:
+      # - ./www:/usr/share/nginx/html
+      # - ./js:/usr/share/nginx/html/global
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template
+    environment:
+      - PHP_HOST=php82
 
   my_db:
     build:
@@ -117,3 +152,4 @@ volumes:
   php-dev-context:
   mydb:
   pgdb:
+
