@@ -5,6 +5,7 @@ let pub_php_ini_defaults = '/mnt/php_ini'
 let steps = {
 	dump_PHP_INI:'Retrieving PHP defaults'
 	create_PHP_workspaces:'PHP Workspaces'
+	setup_shell:'Shell Configuration'
 }
 let step_label_max_size = $steps
 	| transpose name value | get value
@@ -42,6 +43,20 @@ if ($env.PHP_WORK_DIRS? | is-not-empty) {
 	}
 }
 
-null
+if (not ('~/.config/nushell/config.nu' | path exists) ) {
+	announce-step setup_shell
+	mkdir ~/.config/nushell
+	[
+		'$env.config.show_banner = false'
+		'$env.config.buffer_editor = "nvim"'
+	] | save ~/.config/nushell/config.nu
 
-exec php-fpm
+	print $'(ansi green)created(ansi reset)'
+}
+
+if ($env.GIVE_SHELL | into bool) {
+	print ''
+	exec nu
+} else {
+	exec php-fpm
+}

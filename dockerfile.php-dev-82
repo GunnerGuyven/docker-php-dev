@@ -22,12 +22,10 @@ RUN \
 	docker-php-ext-enable xdebug
 
 # TODO:
-# - [x] consider alpine
-# - [ ] consider nushell
-#   - [ ] cull the operations down to only the path manipulation
-
-# COPY container_setup.ps1 /root/container_setup.ps1
+# - [ ] provide configuration
+# 	- [x] nushell config (stop auto prompt and splash)
+# 	- [ ] basic neovim config (if warranted)
 
 WORKDIR /work
 
-# ENTRYPOINT [ "nu", "/root/container_setup.nu" ]
+ENTRYPOINT [ "nu", "/root/container_setup.nu" ]
