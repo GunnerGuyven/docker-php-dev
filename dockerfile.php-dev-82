@@ -26,6 +26,8 @@ RUN \
 # 	- [x] nushell config (stop auto prompt and splash)
 # 	- [ ] basic neovim config (if warranted)
 
+COPY container_setup.nu /root/container_setup.nu
+
 WORKDIR /work
 
 ENTRYPOINT [ "nu", "/root/container_setup.nu" ]

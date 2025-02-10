@@ -54,7 +54,7 @@ if (not ('~/.config/nushell/config.nu' | path exists) ) {
 	print $'(ansi green)created(ansi reset)'
 }
 
-if ($env.GIVE_SHELL | into bool) {
+if ("GIVE_SHELL" in $env and ($env.GIVE_SHELL | into bool)) {
 	print ''
 	exec nu
 } else {
