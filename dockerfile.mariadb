@@ -1,5 +1,7 @@
-FROM mariadb:10-focal
+FROM docker.io/mariadb:11.7.2-ubi9
 
-RUN apt-get -y update && apt-get -y install pv curl
-RUN curl https://getmic.ro | bash
-RUN mv micro /usr/bin
+USER root
+RUN microdnf update -y && microdnf install -y pv proxychains-ng ; \
+	microdnf clean all
+
+USER mysql

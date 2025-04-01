@@ -16,7 +16,7 @@ volumes:
   # - ./my.cnf:/etc/mysql/my.cnf
 ```
 
-The included `my.cnf` file adds settings that expands memory for the database engine.  This allows very large imports to benefit from significantly better performance.
+The included `my.cnf` file adds settings that expands memory for the database engine. This allows very large imports to benefit from significantly better performance.
 
 To run it use the command:
 
@@ -44,7 +44,7 @@ Examine your environment for the proper container name in the above command.
 When you choose to execute you'll see a result such as:
 
 ```console
-$ docker exec -it docker-php-dev_my_db_1 bash sync_db.sh -r backup.remote.com central --go
+$ docker exec -it --user root docker-php-dev_my_db_1 bash sync_db.sh -r backup.remote.com central --go
 
 Retrieving size information for remote database(s) 'central'
 +----------+---------+-----------+-----------+
@@ -57,7 +57,7 @@ Performing download of 'central'
   central: 1.81MiB 0:00:05 [ 338KiB/s]
 
 Compiling result
-1.81MiB 0:00:00 [88.5MiB/s] [=========================================>] 100% 
+1.81MiB 0:00:00 [88.5MiB/s] [=========================================>] 100%
 
 Importing data to local database
   central: 1.81MiB 0:00:00 [ 133MiB/s] [==============================>] 100%
@@ -65,9 +65,17 @@ Importing data to local database
 
 Naturally, edit this script to your needs.
 
+### Note `--user root` in above
+
+Due to the use of images that may default the user to non-root
+(such as the `ubi` base for mariadb) it is necessary to deliberately
+execute the sync operation as root so that the temporary volume mounts
+are writable. In the future a workaround may be found, and this section
+may be amended.
+
 ### Permissions
 
-It may be necessary to grant permission to use the data you import to the user you wish to use.  An example of this is here for reference:
+It may be necessary to grant permission to use the data you import to the user you wish to use. An example of this is here for reference:
 
 ```mysql
 grant all privileges on *.* to 'mydb'@'%';
@@ -75,7 +83,7 @@ grant all privileges on *.* to 'mydb'@'%';
 
 ### Script utility Argbash
 
-A freeware utility called Argbash was used to help generate this script specifically for argument parsing logic.  This was a great time-saver on what is easily one of the most complex elements of bash scripting.  The utility can be found at [https://argbash.dev/] and is engaged by editing the header comments in the script to specification of the API described by the project's documentation and rerunning with this scriptfile as input and output such as:
+A freeware utility called Argbash was used to help generate this script specifically for argument parsing logic. This was a great time-saver on what is easily one of the most complex elements of bash scripting. The utility can be found at [https://argbash.dev/] and is engaged by editing the header comments in the script to specification of the API described by the project's documentation and rerunning with this scriptfile as input and output such as:
 
 ```console
 argbash sync_db.sh -o sync_db.sh
@@ -83,15 +91,15 @@ argbash sync_db.sh -o sync_db.sh
 
 ### Postgres connection from very old clients
 
-Postgres v10 moved to a default SCRAM method for login that is unsupported in pgsql clients that are older (such as those included in the php 5.5 dockerfile in this project).  These clients are able to be supported by enabling the overrides for `postgresql.conf` and `pg_hba.conf` that have been included, but this presents a challenge during setup.
+Postgres v10 moved to a default SCRAM method for login that is unsupported in pgsql clients that are older (such as those included in the php 5.5 dockerfile in this project). These clients are able to be supported by enabling the overrides for `postgresql.conf` and `pg_hba.conf` that have been included, but this presents a challenge during setup.
 
 When starting from a clean data volume for Postgres do not include these file overrides as they will confound the first-time-setup process.
 
 ```yaml
-    volumes:
-      - pgdb:/var/lib/postgresql/data
-      # - ./pg15-postgresql.conf:/var/lib/postgresql/data/postgresql.conf
-      # - ./pg15-pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+volumes:
+  - pgdb:/var/lib/postgresql/data
+  # - ./pg15-postgresql.conf:/var/lib/postgresql/data/postgresql.conf
+  # - ./pg15-pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
 ```
 
 After setup is complete and the engine is accessible, you must restart the container with these config file mounts added, and then reset the password of the user in question to cause its password storage hash to be recalculated to the older standard.
@@ -106,11 +114,11 @@ ALTER ROLE
 pgdb=# exit;
 ```
 
-Restart the Postgres container once more and you should be set.  Replace the usernames and passwords above with those you have chosen.
+Restart the Postgres container once more and you should be set. Replace the usernames and passwords above with those you have chosen.
 
 ## Configuration
 
-Launching docker compose with the `-f` flag allows you to specify a number of configurations which will be applied in order.  Using this, you can supply modifications to the given docker-compose.yml in a separate file for convenience.
+Launching docker compose with the `-f` flag allows you to specify a number of configurations which will be applied in order. Using this, you can supply modifications to the given docker-compose.yml in a separate file for convenience.
 
 ## Trigger PHP Debugging Manually
 

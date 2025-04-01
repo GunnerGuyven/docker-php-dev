@@ -1,4 +1,4 @@
-FROM php:5.5-fpm-alpine
+FROM docker.io/library/php:5.5-fpm-alpine
 # PHP 5.5.38 (cli) (built: Aug 10 2016 21:15:09) 
 # Zend Engine v2.5.0, Copyright (c) 1998-2015 Zend Technologies
 # Alpine 3.4.0

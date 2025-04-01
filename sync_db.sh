@@ -21,18 +21,14 @@
 # Argbash is a bash code generator used to get arguments parsing right.
 # Argbash is FREE SOFTWARE, see https://argbash.io for more info
 
-
-die()
-{
+die() {
 	local _ret="${2:-1}"
 	test "${_PRINT_HELP:-no}" = yes && print_help >&2
 	echo "$1" >&2
 	exit "${_ret}"
 }
 
-
-begins_with_short_option()
-{
+begins_with_short_option() {
 	local first_option all_short_options='ruptgdih'
 	first_option="${1:0:1}"
 	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
@@ -54,9 +50,7 @@ _arg_maria="off"
 _arg_locale_fix="on"
 _arg_include_roles="off"
 
-
-print_help()
-{
+print_help() {
 	printf '%s\n' "A helper for syncing local data from remote"
 	printf 'Usage: %s [-r|--host <arg>] [-u|--user <arg>] [-p|--pass <arg>] [-t|--port <arg>] [-g|--(no-)go] [-d|--(no-)skip-download] [-i|--(no-)skip-import] [--(no-)psql] [--(no-)maria] [--(no-)locale-fix] [--(no-)include-roles] [-h|--help] [<dbname-1>] ... [<dbname-n>] ...\n' "$0"
 	printf '\t%s\n' "<dbname>: The database name(s) we are importing"
@@ -74,142 +68,132 @@ print_help()
 	printf '\t%s\n' "-h, --help: Prints help"
 }
 
-
-parse_commandline()
-{
+parse_commandline() {
 	_positionals_count=0
-	while test $# -gt 0
-	do
+	while test $# -gt 0; do
 		_key="$1"
 		case "$_key" in
-			-r|--host)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_host="$2"
-				shift
-				;;
-			--host=*)
-				_arg_host="${_key##--host=}"
-				;;
-			-r*)
-				_arg_host="${_key##-r}"
-				;;
-			-u|--user)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_user="$2"
-				shift
-				;;
-			--user=*)
-				_arg_user="${_key##--user=}"
-				;;
-			-u*)
-				_arg_user="${_key##-u}"
-				;;
-			-p|--pass)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_pass="$2"
-				shift
-				;;
-			--pass=*)
-				_arg_pass="${_key##--pass=}"
-				;;
-			-p*)
-				_arg_pass="${_key##-p}"
-				;;
-			-t|--port)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_port="$2"
-				shift
-				;;
-			--port=*)
-				_arg_port="${_key##--port=}"
-				;;
-			-t*)
-				_arg_port="${_key##-t}"
-				;;
-			-g|--no-go|--go)
-				_arg_go="on"
-				test "${1:0:5}" = "--no-" && _arg_go="off"
-				;;
-			-g*)
-				_arg_go="on"
-				_next="${_key##-g}"
-				if test -n "$_next" -a "$_next" != "$_key"
-				then
-					{ begins_with_short_option "$_next" && shift && set -- "-g" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
-				fi
-				;;
-			-d|--no-skip-download|--skip-download)
-				_arg_skip_download="on"
-				test "${1:0:5}" = "--no-" && _arg_skip_download="off"
-				;;
-			-d*)
-				_arg_skip_download="on"
-				_next="${_key##-d}"
-				if test -n "$_next" -a "$_next" != "$_key"
-				then
-					{ begins_with_short_option "$_next" && shift && set -- "-d" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
-				fi
-				;;
-			-i|--no-skip-import|--skip-import)
-				_arg_skip_import="on"
-				test "${1:0:5}" = "--no-" && _arg_skip_import="off"
-				;;
-			-i*)
-				_arg_skip_import="on"
-				_next="${_key##-i}"
-				if test -n "$_next" -a "$_next" != "$_key"
-				then
-					{ begins_with_short_option "$_next" && shift && set -- "-i" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
-				fi
-				;;
-			--no-psql|--psql)
-				_arg_psql="on"
-				test "${1:0:5}" = "--no-" && _arg_psql="off"
-				;;
-			--no-maria|--maria)
-				_arg_maria="on"
-				test "${1:0:5}" = "--no-" && _arg_maria="off"
-				;;
-			--no-locale-fix|--locale-fix)
-				_arg_locale_fix="on"
-				test "${1:0:5}" = "--no-" && _arg_locale_fix="off"
-				;;
-			--no-include-roles|--include-roles)
-				_arg_include_roles="on"
-				test "${1:0:5}" = "--no-" && _arg_include_roles="off"
-				;;
-			-h|--help)
-				print_help
-				exit 0
-				;;
-			-h*)
-				print_help
-				exit 0
-				;;
-			*)
-				_last_positional="$1"
-				_positionals+=("$_last_positional")
-				_positionals_count=$((_positionals_count + 1))
-				;;
+		-r | --host)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_host="$2"
+			shift
+			;;
+		--host=*)
+			_arg_host="${_key##--host=}"
+			;;
+		-r*)
+			_arg_host="${_key##-r}"
+			;;
+		-u | --user)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_user="$2"
+			shift
+			;;
+		--user=*)
+			_arg_user="${_key##--user=}"
+			;;
+		-u*)
+			_arg_user="${_key##-u}"
+			;;
+		-p | --pass)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_pass="$2"
+			shift
+			;;
+		--pass=*)
+			_arg_pass="${_key##--pass=}"
+			;;
+		-p*)
+			_arg_pass="${_key##-p}"
+			;;
+		-t | --port)
+			test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+			_arg_port="$2"
+			shift
+			;;
+		--port=*)
+			_arg_port="${_key##--port=}"
+			;;
+		-t*)
+			_arg_port="${_key##-t}"
+			;;
+		-g | --no-go | --go)
+			_arg_go="on"
+			test "${1:0:5}" = "--no-" && _arg_go="off"
+			;;
+		-g*)
+			_arg_go="on"
+			_next="${_key##-g}"
+			if test -n "$_next" -a "$_next" != "$_key"; then
+				{ begins_with_short_option "$_next" && shift && set -- "-g" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
+			fi
+			;;
+		-d | --no-skip-download | --skip-download)
+			_arg_skip_download="on"
+			test "${1:0:5}" = "--no-" && _arg_skip_download="off"
+			;;
+		-d*)
+			_arg_skip_download="on"
+			_next="${_key##-d}"
+			if test -n "$_next" -a "$_next" != "$_key"; then
+				{ begins_with_short_option "$_next" && shift && set -- "-d" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
+			fi
+			;;
+		-i | --no-skip-import | --skip-import)
+			_arg_skip_import="on"
+			test "${1:0:5}" = "--no-" && _arg_skip_import="off"
+			;;
+		-i*)
+			_arg_skip_import="on"
+			_next="${_key##-i}"
+			if test -n "$_next" -a "$_next" != "$_key"; then
+				{ begins_with_short_option "$_next" && shift && set -- "-i" "-${_next}" "$@"; } || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
+			fi
+			;;
+		--no-psql | --psql)
+			_arg_psql="on"
+			test "${1:0:5}" = "--no-" && _arg_psql="off"
+			;;
+		--no-maria | --maria)
+			_arg_maria="on"
+			test "${1:0:5}" = "--no-" && _arg_maria="off"
+			;;
+		--no-locale-fix | --locale-fix)
+			_arg_locale_fix="on"
+			test "${1:0:5}" = "--no-" && _arg_locale_fix="off"
+			;;
+		--no-include-roles | --include-roles)
+			_arg_include_roles="on"
+			test "${1:0:5}" = "--no-" && _arg_include_roles="off"
+			;;
+		-h | --help)
+			print_help
+			exit 0
+			;;
+		-h*)
+			print_help
+			exit 0
+			;;
+		*)
+			_last_positional="$1"
+			_positionals+=("$_last_positional")
+			_positionals_count=$((_positionals_count + 1))
+			;;
 		esac
 		shift
 	done
 }
 
-
-assign_positional_args()
-{
+assign_positional_args() {
 	local _positional_name _shift_for=$1
 	_positional_names=""
 	_our_args=$((${#_positionals[@]} - 0))
-	for ((ii = 0; ii < _our_args; ii++))
-	do
+	for ((ii = 0; ii < _our_args; ii++)); do
 		_positional_names="$_positional_names _arg_dbname[$((ii + 0))]"
 	done
 
 	shift "$_shift_for"
-	for _positional_name in ${_positional_names}
-	do
+	for _positional_name in ${_positional_names}; do
 		test $# -gt 0 || break
 		eval "$_positional_name=\${1}" || die "Error during argument parsing, possibly an Argbash bug." 1
 		shift
@@ -245,6 +229,26 @@ else
 	exit 1
 fi
 
+WARP_IP=$(timeout 1 getent ahosts warp | awk '{print $1}' | head -n1)
+
+if [[ -n $WARP_IP ]]; then
+	cat >/tmp/proxychains_temp.conf <<EOF
+strict_chain
+proxy_dns
+remote_dns_subnet 224
+tcp_read_time_out 15000
+tcp_connect_time_out 8000
+[ProxyList]
+socks5 $WARP_IP 1080
+EOF
+
+	proxy="proxychains -q -f /tmp/proxychains_temp.conf"
+fi
+
+if [[ -n $SYNC_NO_SSL ]]; then
+	nossl='--skip-ssl'
+fi
+
 rdbs="${_arg_dbname[@]}"
 
 if [[ $_arg_skip_download == 'off' ]]; then
@@ -262,7 +266,7 @@ if [[ $_arg_skip_download == 'off' ]]; then
 			db_name_field="table_schema"
 		fi
 		schema_filter="$db_name_field IN ('$_arg_dbname'"
-		for (( i=1; i<${#_arg_dbname[@]}; i++ )); do
+		for ((i = 1; i < ${#_arg_dbname[@]}; i++)); do
 			schema_filter+=",'${_arg_dbname[$i]}'"
 		done
 		schema_filter+=')'
@@ -290,7 +294,7 @@ if [[ $_arg_skip_download == 'off' ]]; then
 		marg_h=${_arg_host:+"-h$_arg_host"}
 		marg_u=${_arg_user:+"-U$_arg_user"}
 		marg_t=${_arg_port:+"-p$_arg_port"}
-		echo $remote_size | PGPASSWORD=$_arg_pass psql $marg_h $marg_u $marg_t --no-password
+		echo $remote_size | PGPASSWORD=$_arg_pass $proxy psql $marg_h $marg_u $marg_t --no-password
 	else
 		remote_size="
 		SELECT
@@ -310,13 +314,13 @@ if [[ $_arg_skip_download == 'off' ]]; then
 		marg_u=${_arg_user:+"-u$_arg_user"}
 		marg_p=${_arg_pass:+"-p$_arg_pass"}
 		marg_t=${_arg_port:+"-P$_arg_port"}
-		echo $remote_size | mysql -t $marg_h $marg_u $marg_p $marg_t
+		echo $remote_size | $proxy mariadb $nossl -t $marg_h $marg_u $marg_p $marg_t
 	fi
 fi
 
 if [[ $_arg_go == 'on' ]]; then
 	if [[ -d ./temp/sync_db/ ]]; then
-		pushd ./temp/sync_db/ &> /dev/null
+		pushd ./temp/sync_db/ &>/dev/null
 		intempdir=yes
 	fi
 	temp_file="${rdbs// /+}.tar.gz"
@@ -325,25 +329,25 @@ if [[ $_arg_go == 'on' ]]; then
 		echo "Performing download of '$rdbs'"
 		__out_files=()
 		if [[ $DB_MODE == 'psql' && $_arg_include_roles == 'on' ]]; then
-			PGPASSWORD=$_arg_pass pg_dumpall $marg_h $marg_u $marg_t --no-password --roles-only --no-role-passwords | pv -trb -N roles > "roles"
+			PGPASSWORD=$_arg_pass $proxy pg_dumpall $marg_h $marg_u $marg_t --no-password --roles-only --no-role-passwords | pv -trb -N roles >"roles"
 			__out_files+=("roles")
 		fi
-		for (( i=0; i<${#_arg_dbname[@]}; i++ )); do
+		for ((i = 0; i < ${#_arg_dbname[@]}; i++)); do
 			__db=${_arg_dbname[$i]}
 			__file="${__db// /_}"
 			__out_files+=($__file)
 			if [[ $DB_MODE == 'psql' ]]; then
-				PGPASSWORD=$_arg_pass pg_dump $marg_h $marg_u $marg_t --no-password --create --clean --if-exists --dbname="$__db" | pv -trb -N $__file > $__file
+				PGPASSWORD=$_arg_pass $proxy pg_dump $marg_h $marg_u $marg_t --no-password --create --clean --if-exists --dbname="$__db" | pv -trb -N $__file >$__file
 				if [[ $_arg_locale_fix == 'on' ]]; then
 					sed -i "s|LOCALE = 'English_United States.1252'|LOCALE = 'en_US.utf8'|" $__file
 				fi
 			else
-				mysqldump --lock-tables=false --single-transaction=true --default-character-set=latin1 $marg_h $marg_u $marg_p $marg_t --add-drop-database --databases $__db | pv -trb -N $__file > $__file
+				$proxy mariadb-dump $nossl --lock-tables=false --single-transaction=true --default-character-set=latin1 $marg_h $marg_u $marg_p $marg_t --add-drop-database --databases $__db | pv -trb -N $__file >$__file
 			fi
 		done
 		echo
 		echo 'Compiling result'
-		tar cf - ${__out_files[@]} | pv -s $(du -scb ${__out_files[@]} | awk '{print $1}' | tail -n1) | gzip > $temp_file
+		tar cf - ${__out_files[@]} | pv -s $(du -scb ${__out_files[@]} | awk '{print $1}' | tail -n1) | gzip >$temp_file
 		rm ${__out_files[@]}
 	fi
 	if [[ $_arg_skip_import == 'off' ]]; then
@@ -353,14 +357,14 @@ if [[ $_arg_go == 'on' ]]; then
 			if [[ $DB_MODE == 'psql' ]]; then
 				PGPASSWORD=$POSTGRES_PASSWORD tar -xzf $temp_file --to-command="pv -N \$TAR_FILENAME -s \$TAR_SIZE | psql -U$POSTGRES_USER --quiet --output=/dev/null"
 			else
-				tar -xzf $temp_file --to-command="pv -N \$TAR_FILENAME -s \$TAR_SIZE | mysql -uroot --password='$MARIADB_ROOT_PASSWORD'"
+				tar -xzf $temp_file --to-command="pv -N \$TAR_FILENAME -s \$TAR_SIZE | mariadb -uroot --password='$MARIADB_ROOT_PASSWORD'"
 			fi
 		else
 			echo "Import: Expected archive file '$temp_file' not found"
 		fi
 	fi
 	if [[ -n $intempdir ]]; then
-		popd &> /dev/null
+		popd &>/dev/null
 	fi
 fi
 

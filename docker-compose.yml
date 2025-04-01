@@ -51,20 +51,20 @@ services:
     build:
       context: .
       dockerfile: dockerfile.php-dev-82
-    image: php-dev:0.6.3-82
+    image: php-dev:0.6.5-82
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
       - "2224:22"
+    # networks: # uncomment this section to enable warp proxy
+    #   - default
+    #   - warp
     expose:
       - 9000
     volumes:
-      - php-dev-context:/mnt/context
-      # - ./context:/mnt/context
-      # - ./term_keys:/mnt/term_keys
       # - ./php_ini:/mnt/php_ini
-      # - ./container_setup.ps1:/root/container_setup.ps1
-      # - ./php74.ini:/usr/local/etc/php/php.ini
+      # - ./container_setup.nu:/root/container_setup.nu
+      - ./php82.ini:/usr/local/etc/php/php.ini
       # - ./www:/var/www/html
       # - ./lib:/var/www/lib
     env_file: php_env
@@ -72,7 +72,7 @@ services:
   nginx55:
     depends_on:
       - php55
-    image: nginx:1.24-alpine
+    image: docker.io/nginx:1.24-alpine
     ports:
       - 5055:80
     volumes:
@@ -85,7 +85,7 @@ services:
   nginx74:
     depends_on:
       - php74
-    image: nginx:1.24-alpine
+    image: docker.io/nginx:1.24-alpine
     ports:
       - 5074:80
     volumes:
@@ -98,7 +98,7 @@ services:
   nginx82:
     depends_on:
       - php82
-    image: nginx:1.24-alpine
+    image: docker.io/nginx:1.24-alpine
     ports:
       - 5082:80
     volumes:
@@ -112,8 +112,13 @@ services:
     build:
       context: .
       dockerfile: dockerfile.mariadb
-    image: mydb-dev:0.4.0
+    image: mydb-dev:0.6.0
     # image: mariadb
+    # ports:
+    #   - 3306:3306
+    # networks: # uncomment this section to enable warp proxy
+    #   - default
+    #   - warp
     volumes:
       - mydb:/var/lib/mysql
       - ./temp/my_sync_db:/temp/sync_db
@@ -124,6 +129,7 @@ services:
       MARIADB_DATABASE: mydb
       MARIADB_USER: mydb
       MARIADB_PASSWORD: abc123
+      # SYNC_NO_SSL: 1 # uncomment to disable forced SSL connections on sync
 
   pg_db:
     build:
@@ -152,4 +158,9 @@ volumes:
   php-dev-context:
   mydb:
   pgdb:
-
+#
+# uncomment this section to enable external warp proxy
+# networks:
+#   warp:
+#     name: warp_default
+#     external: true

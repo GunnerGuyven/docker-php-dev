@@ -1,4 +1,4 @@
-FROM php:7.4-fpm
+FROM docker.io/library/php:7.4-fpm
 # PHP 7.4.33 (cli) (built: Nov 15 2022 06:05:55) ( NTS )
 # Zend Engine v3.4.0, Copyright (c) Zend Technologies
 # Debian 11 (bullseye)
