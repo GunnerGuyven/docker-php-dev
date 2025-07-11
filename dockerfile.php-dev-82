@@ -1,31 +1,38 @@
-FROM docker.io/library/php:8.2-fpm-alpine3.21
-# PHP 8.2.27 (cli) (built: Jan  8 2025 18:09:44) (NTS)
-# Zend Engine v4.2.27, Copyright (c) Zend Technologies
+FROM docker.io/library/php:8.2-fpm-alpine3.22
+# PHP 8.2.28 (cli) (built: Jun 25 2025 19:25:33) (NTS)
+# Zend Engine v4.2.28, Copyright (c) Zend Technologies
 
 RUN \
 	# packages
 	apk update && \
 	apk add --no-cache \
-	autoconf=2.72-r0 \
+	autoconf=2.72-r1 \
 	build-base=0.5-r3 \
-	linux-headers=6.6-r1 \
-	neovim=0.10.4-r0 \
-	nushell=0.100.0-r1 \
-	postgresql17-dev=17.4-r0 \
+	linux-headers=6.14.2-r0 \
+	neovim=0.11.1-r1 \
+	nushell=0.104.1-r0 \
+	postgresql17-dev=17.5-r0 \
+	unixodbc=2.3.12-r0 \
+	unixodbc-dev=2.3.12-r0 \
 	&& \
-	# database extensions
-	docker-php-ext-install pdo_mysql mysqli pdo_pgsql \
-	&& \
+	# mssql odbc drivers
+	curl -O https://download.microsoft.com/download/fae28b9a-d880-42fd-9b98-d779f0fdd77f/msodbcsql18_18.5.1.1-1_amd64.apk && \
+	curl -O https://download.microsoft.com/download/7/6/d/76de322a-d860-4894-9945-f0cc5d6a45f8/mssql-tools18_18.4.1.1-1_amd64.apk && \
+	apk add --no-cache --allow-untrusted \
+	msodbcsql18_18.5.1.1-1_amd64.apk \
+	mssql-tools18_18.4.1.1-1_amd64.apk \
+	&& rm ./*.apk && \
+	# php database extensions
+	docker-php-ext-configure pdo_odbc --with-pdo-odbc=unixODBC,/usr && \
+	docker-php-ext-install pdo_mysql mysqli pdo_pgsql pdo_odbc && \
 	# xdebug
 	pecl channel-update pecl.php.net && \
-	pecl install xdebug-3.4.1 && \
+	pecl install xdebug-3.4.4 && \
 	docker-php-ext-enable xdebug
 
-# TODO:
-# - [ ] provide configuration
-# 	- [x] nushell config (stop auto prompt and splash)
-# 	- [ ] basic neovim config (if warranted)
-
+# odbc connection definitions
+COPY odbc.ini /etc/odbc.ini
+# runtime environment configuration
 COPY container_setup.nu /root/container_setup.nu
 
 WORKDIR /work

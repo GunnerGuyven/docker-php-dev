@@ -1,10 +1,16 @@
 # Docker Based PHP Development Environment
 
-This is a collection of dockerfiles, scripts, settings, and a compose file tying them largely together to create a mostly ready-to-go environment for development.
+This is a collection of dockerfiles, scripts, settings, and compose files tying
+them largely together to create a mostly ready-to-go environment for
+development. These have obviously made-up references to external assets and
+directories that you are expected to replace for your own purposes.
 
 ## Database
 
-Script added to import. Not taking advantage of the auto-setup scripting feature of these images to be slightly more flexible, and to deal with situations where imports should or shouldn't happen at the user's discretion (and can be very expensive in my case).
+Script added to import. Not taking advantage of the auto-setup scripting
+feature of these images to be slightly more flexible, and to deal with
+situations where imports should or shouldn't happen at the user's discretion
+(and can be very expensive in my case).
 
 To import, uncomment the extra lines in this section of `docker-compose.yml`:
 
@@ -16,7 +22,9 @@ volumes:
   # - ./my.cnf:/etc/mysql/my.cnf
 ```
 
-The included `my.cnf` file adds settings that expands memory for the database engine. This allows very large imports to benefit from significantly better performance.
+The included `my.cnf` file adds settings that expands memory for the database
+engine. This allows very large imports to benefit from significantly better
+performance.
 
 To run it use the command:
 
@@ -75,7 +83,8 @@ may be amended.
 
 ### Permissions
 
-It may be necessary to grant permission to use the data you import to the user you wish to use. An example of this is here for reference:
+It may be necessary to grant permission to use the data you import to the user
+you wish to use. An example of this is here for reference:
 
 ```mysql
 grant all privileges on *.* to 'mydb'@'%';
@@ -83,7 +92,12 @@ grant all privileges on *.* to 'mydb'@'%';
 
 ### Script utility Argbash
 
-A freeware utility called Argbash was used to help generate this script specifically for argument parsing logic. This was a great time-saver on what is easily one of the most complex elements of bash scripting. The utility can be found at [https://argbash.dev/] and is engaged by editing the header comments in the script to specification of the API described by the project's documentation and rerunning with this scriptfile as input and output such as:
+A freeware utility called Argbash was used to help generate this script
+specifically for argument parsing logic. This was a great time-saver on what is
+easily one of the most complex elements of bash scripting. The utility can be
+found at [https://argbash.dev/] and is engaged by editing the header comments
+in the script to specification of the API described by the project's
+documentation and rerunning with this scriptfile as input and output such as:
 
 ```console
 argbash sync_db.sh -o sync_db.sh
@@ -91,9 +105,14 @@ argbash sync_db.sh -o sync_db.sh
 
 ### Postgres connection from very old clients
 
-Postgres v10 moved to a default SCRAM method for login that is unsupported in pgsql clients that are older (such as those included in the php 5.5 dockerfile in this project). These clients are able to be supported by enabling the overrides for `postgresql.conf` and `pg_hba.conf` that have been included, but this presents a challenge during setup.
+Postgres v10 moved to a default SCRAM method for login that is unsupported in
+pgsql clients that are older (such as those included in the php 5.5 dockerfile
+in this project). These clients are able to be supported by enabling the
+overrides for `postgresql.conf` and `pg_hba.conf` that have been included, but
+this presents a challenge during setup.
 
-When starting from a clean data volume for Postgres do not include these file overrides as they will confound the first-time-setup process.
+When starting from a clean data volume for Postgres do not include these file
+overrides as they will confound the first-time-setup process.
 
 ```yaml
 volumes:
@@ -102,7 +121,10 @@ volumes:
   # - ./pg15-pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
 ```
 
-After setup is complete and the engine is accessible, you must restart the container with these config file mounts added, and then reset the password of the user in question to cause its password storage hash to be recalculated to the older standard.
+After setup is complete and the engine is accessible, you must restart the
+container with these config file mounts added, and then reset the password of
+the user in question to cause its password storage hash to be recalculated to
+the older standard.
 
 ```console
 $ docker exec -it docker-php-dev-pg_db-1 psql -U pgdb
@@ -114,12 +136,40 @@ ALTER ROLE
 pgdb=# exit;
 ```
 
-Restart the Postgres container once more and you should be set. Replace the usernames and passwords above with those you have chosen.
+Restart the Postgres container once more and you should be set. Replace the
+usernames and passwords above with those you have chosen.
 
 ## Configuration
 
-Launching docker compose with the `-f` flag allows you to specify a number of configurations which will be applied in order. Using this, you can supply modifications to the given docker-compose.yml in a separate file for convenience.
+Launching docker compose with the `-f` flag allows you to specify a number of
+configurations which will be applied in order. Using this, you can supply
+modifications to the given docker-compose.yml in a separate file for
+convenience.
 
 ## Trigger PHP Debugging Manually
 
 XDEBUG_SESSION_START=session_name
+
+## Using Compose to manage deployment
+
+Included is an example file `docker-compose.deployment.yml` which demonstrates
+how to manage / consolidate deployment steps together using compose rather than
+writing a batch file or memorizing extra commands to execute in a particular
+order.
+
+This file has the following features:
+
+- A base platform image with no application code included
+- An application image that depends on the outcome of the base build
+  - This image only differs from the base in some light configuration and
+    application code
+  - This image is pre-tagged with the elaborate host-name of a private image
+    host deploy target
+  - definition is inlined and references out-of-directory assets
+- A web image that includes similar features as above
+- Redundant volumes defined for real-time editing / testing
+- Tagging / Versioning is consolidated in the env and fails when definitions
+  are missing
+  - `.env` may be used and is automatically utilized if present
+
+haha

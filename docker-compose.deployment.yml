@@ -1,0 +1,64 @@
+services:
+  # this service only expsts to be a build base for the next
+  php82base:
+    build:
+      dockerfile: dockerfile.php-dev-82
+    pull_policy: never
+    image: php82:${BASE_TAG?error}
+    entrypoint: ""
+    command: /bin/true
+
+  php:
+    build:
+      additional_contexts:
+        # this forces the build to wait for the outcome above
+        base_image: "service:php82base"
+        # this allows targeting assets outside the current directory
+        app_codebase: ../../myorg/myapp/
+      dockerfile_inline: |
+        FROM base_image
+        COPY odbc.ini /etc/odbc.ini
+        COPY php82.ini /usr/local/etc/php/php.ini
+        COPY --from=app_codebase web /var/www/html
+        COPY --from=app_codebase lib /var/www/lib
+    pull_policy: never
+    image: extremely-long-publishing-host.myimagerepository.com/myorg/php82:${BASE_TAG?error}-myapp-${MYAPP_TAG?error}
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+    # ports:
+    #   - "2223:22"
+    # networks:
+    #   - default
+    #   - warp
+    volumes:
+      - php-dev-context:/mnt/context
+      - ./odbc.ini:/etc/odbc.ini
+      - ./php82.ini:/usr/local/etc/php/php.ini
+      - ../../myorg/myapp/web:/var/www/html
+      - ../../myorg/myapp/lib:/var/www/lib
+    env_file: php_env
+
+  web:
+    depends_on:
+      - php
+    build:
+      additional_contexts:
+        app_codebase: ../../myorg/myapp/
+      dockerfile_inline: |
+        FROM docker.io/nginx:1.24-alpine
+        COPY --from=app_codebase web /user/share/nginx/html
+        COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+    pull_policy: never
+    image: extremely-long-publishing-host.myimagerepository.com/myorg/web:${BASE_TAG?error}-myapp-${MYAPP_TAG?error}
+    ports:
+      - 5182:80
+    volumes:
+      - ../../myorg/myapp/web:/usr/share/nginx/html
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template
+    environment:
+      - PHP_HOST=php
+#
+# networks:
+#   warp:
+#     name: warp_default
+#     external: true
