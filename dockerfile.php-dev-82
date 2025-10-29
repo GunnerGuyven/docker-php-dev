@@ -8,10 +8,11 @@ RUN \
 	apk add --no-cache \
 	autoconf=2.72-r1 \
 	build-base=0.5-r3 \
+	curl=8.14.1-r0 \
 	linux-headers=6.14.2-r0 \
 	neovim=0.11.1-r1 \
 	nushell=0.104.1-r0 \
-	postgresql17-dev=17.5-r0 \
+	postgresql17-dev=17.6-r0 \
 	unixodbc=2.3.12-r0 \
 	unixodbc-dev=2.3.12-r0 \
 	&& \

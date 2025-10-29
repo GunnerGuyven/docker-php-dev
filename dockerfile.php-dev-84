@@ -1,0 +1,44 @@
+FROM quay.io/archlinux/archlinux:base-devel-20251019.0.436919
+
+ARG OP_PASS
+ENV PHP_INTEGRATED=1
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN \
+	# system setup
+	pacman-key --init && \
+	pacman-key --populate archlinux && \
+	pacman -Syu --noconfirm && \
+	# install php, nginx, etc
+	pacman -S --noconfirm \
+	neovim \
+	nginx \
+	nushell \
+	php \
+	php-fpm \
+	sudo \
+	&& \
+	# install warp-cli
+	curl -O https://releases.warp.dev/stable/v0.2025.10.22.08.13.stable_02/warp-cli-v0.2025.10.22.08.13.stable_02-1-x86_64.pkg.tar.zst && \
+	pacman -U warp-cli-v0.2025.10.22.08.13.stable_02-1-x86_64.pkg.tar.zst && \
+	# clean up pacman cache
+	rm -rf /var/cache/pacman/pkg/*
+
+RUN \
+	# add administrative operator
+	useradd -m -s /usr/bin/nu op && \
+	echo "op:${OP_PASS}" | chpasswd && \
+	echo "op ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/op && \
+	chmod 0440 /etc/sudoers.d/op && \
+	echo todo: set shell config
+
+# runtime environment configuration
+COPY container_setup.nu /root/container_setup.nu
+
+WORKDIR /work
+
+# USER http
+
+ENTRYPOINT [ "nu", "/root/container_setup.nu" ]
+
