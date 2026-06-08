@@ -57,6 +57,8 @@ if (not ('~/.config/nushell/config.nu' | path exists) ) {
 if ("GIVE_SHELL" in $env and ($env.GIVE_SHELL | into bool)) {
 	print ''
 	exec nu
+} else if ("USE_SUPERVISOR" in $env and ($env.USE_SUPERVISOR | into bool)) {
+  exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
 } else {
 	exec php-fpm
 }

@@ -1,0 +1,4 @@
+{
+  "imports": { "@oak/oak": "jsr:@oak/oak@^17.2.0" },
+  "lint": { "rules": { "include": ["no-process-global", "no-node-globals"] } }
+}

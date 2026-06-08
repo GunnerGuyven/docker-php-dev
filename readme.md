@@ -171,5 +171,3 @@ This file has the following features:
 - Tagging / Versioning is consolidated in the env and fails when definitions
   are missing
   - `.env` may be used and is automatically utilized if present
-
-haha

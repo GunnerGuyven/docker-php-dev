@@ -1,0 +1,71 @@
+FROM docker.io/denoland/deno:2.8.2 AS deno-builder
+
+WORKDIR /build
+
+# adjust source location to your deno application code
+COPY demo/deno_php82/deno/ .
+
+# adjust permissions to application needs
+RUN deno compile \
+	--allow-net \
+	--allow-env \
+	--output /deno-app \
+	mod.ts
+
+# final runtime
+FROM docker.io/php:8.2.31-fpm-bookworm
+
+# safety: failfast for shell commands
+SHELL ["/bin/bash", "-o", "pipefail", "-c" ]
+
+ARG NUSHELL_VERSION=0.113.1 
+ARG NVIM_VERSION=0.12.2
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
+	apt-get install -y --no-install-recommends \
+	autoconf=2.71-3 \
+	build-essential=12.9 \
+	ca-certificates=20230311+deb12u1 \
+	curl=7.88.1-10+deb12u14 \
+	gnupg=2.2.40-1.1+deb12u2 \
+	nginx=1.22.1-9+deb12u8 \
+	supervisor=4.2.5-1 \
+	unixodbc=2.3.11-2+deb12u1 \
+	unixodbc-dev=2.3.11-2+deb12u1 \
+	&& \
+	# Add Microsoft package repository and install the ODBC driver (Debian 12 / bookworm)
+	curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg && \
+	echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list && \
+	apt-get update && ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
+	msodbcsql18=18.6.2.1-1 \
+	&& \
+	# for generic pdo+odbc support use the following instead
+	# docker-php-ext-configure pdo_odbc --with-pdo-odbc=unixODBC,/usr && \
+	# docker-php-ext-install pdo_odbc && \
+	pecl install sqlsrv-5.10.1 pdo_sqlsrv-5.10.1 && \
+	docker-php-ext-enable sqlsrv pdo_sqlsrv && \
+	# add nushell
+	curl -fsSL "https://github.com/nushell/nushell/releases/download/${NUSHELL_VERSION}/nu-${NUSHELL_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+	| tar -xzf - -C /usr/local/bin --strip-components=1 && \
+	chmod +x /usr/local/bin/nu && \
+	# add neovim
+	curl -fsSL "https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-linux-x86_64.tar.gz" -o /tmp/nvim.tar.gz && \
+	tar -xzf /tmp/nvim.tar.gz -C /usr/local --strip-components=1 && \
+	rm /tmp/nvim.tar.gz && \
+	chmod +x /usr/local/bin/nvim || true && \
+	# clean up packaging
+	apt-get purge -y --auto-remove build-essential autoconf && \
+	rm -rf /var/lib/apt/lists/*
+
+COPY nginx-deno-php.conf /etc/nginx/sites-available/default
+COPY demo/deno_php82/supervisor-services.conf /etc/supervisor/conf.d/services.conf
+COPY container_setup.nu /root/container_setup.nu
+
+COPY --from=deno-builder /deno-app /usr/local/bin/deno-app
+
+# adjust source location to your php application code
+COPY demo/deno_php82/php/ /app/php/
+
+ENV USE_SUPERVISOR=1
+
+ENTRYPOINT ["nu", "/root/container_setup.nu"]
