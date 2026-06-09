@@ -14,6 +14,8 @@ RUN deno compile \
 
 # final runtime
 FROM docker.io/php:8.2.31-fpm-bookworm
+# PHP 8.2.31 (cli) (built: May 19 2026 23:15:21) (NTS)
+# Zend Engine v4.2.31, Copyright (c) Zend Technologies
 
 # safety: failfast for shell commands
 SHELL ["/bin/bash", "-o", "pipefail", "-c" ]
@@ -57,13 +59,12 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
 	apt-get purge -y --auto-remove build-essential autoconf && \
 	rm -rf /var/lib/apt/lists/*
 
-COPY nginx-deno-php.conf /etc/nginx/sites-available/default
+COPY demo/deno_php82/nginx-deno-php.conf /etc/nginx/sites-available/default
 COPY demo/deno_php82/supervisor-services.conf /etc/supervisor/conf.d/services.conf
+COPY odbc.ini /etc/odbc.ini
 COPY container_setup.nu /root/container_setup.nu
 
 COPY --from=deno-builder /deno-app /usr/local/bin/deno-app
-
-# adjust source location to your php application code
 COPY demo/deno_php82/php/ /app/php/
 
 ENV USE_SUPERVISOR=1

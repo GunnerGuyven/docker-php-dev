@@ -1,6 +1,6 @@
 FROM quay.io/archlinux/archlinux:base-devel-20251019.0.436919
 
-ARG OP_PASS
+ARG OP_PASS=abc123
 ENV PHP_INTEGRATED=1
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -10,20 +10,22 @@ RUN \
 	pacman-key --init && \
 	pacman-key --populate archlinux && \
 	pacman -Syu --noconfirm && \
+	echo
+RUN \
 	# install php, nginx, etc
 	pacman -S --noconfirm \
+	git \
 	neovim \
+	nftables \
 	nginx \
+	nspr \
+	nss \
 	nushell \
 	php \
 	php-fpm \
 	sudo \
-	&& \
-	# install warp-cli
-	curl -O https://releases.warp.dev/stable/v0.2025.10.22.08.13.stable_02/warp-cli-v0.2025.10.22.08.13.stable_02-1-x86_64.pkg.tar.zst && \
-	pacman -U warp-cli-v0.2025.10.22.08.13.stable_02-1-x86_64.pkg.tar.zst && \
 	# clean up pacman cache
-	rm -rf /var/cache/pacman/pkg/*
+	&& rm -rf /var/cache/pacman/pkg/*
 
 RUN \
 	# add administrative operator
@@ -36,9 +38,20 @@ RUN \
 # runtime environment configuration
 COPY container_setup.nu /root/container_setup.nu
 
+USER op
 WORKDIR /work
+
+RUN \
+	# # install warp-cli
+	# curl -O https://releases.warp.dev/stable/v0.2025.10.22.08.13.stable_02/warp-cli-v0.2025.10.22.08.13.stable_02-1-x86_64.pkg.tar.zst && \
+	# pacman -U --noconfirm warp-cli-v0.2025.10.22.08.13.stable_02-1-x86_64.pkg.tar.zst && \
+	# git clone https://aur.archlinux.org/cloudflare-warp-bin.git 
+	git clone https://aur.archlinux.org/cloudflare-warp-minimal-bin.git && \
+	makepkg -D cloudflare-warp-minimal-bin -i --noconfirm
+
 
 # USER http
 
-ENTRYPOINT [ "nu", "/root/container_setup.nu" ]
+# ENTRYPOINT [ "nu", "/root/container_setup.nu" ]
+ENTRYPOINT [ "nu" ]
 
